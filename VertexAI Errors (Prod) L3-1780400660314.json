@@ -1,0 +1,598 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 9356,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 9,
+        "x": 0,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "kubernetes.container.name = \"ipa-api-server\"\nAND kubernetes.pod_labels.release = \"prod\"\n| parseJson(message)\n| cloud := splitString(field=request_url, by=\"\\\\/\", index=2)\n| cloud = \"vertexai\"\n| is_error := if(condition=regex(field=levelname, \"^ERROR$\"), then=1, else=0)\n| is_429 := if(condition=regex(field=message, \"429\"), then=1, else=0)\n| is_429_error := is_error * is_429\n| regex(field=request_url, \"\\/models\\/(?P<model>[^\\/]+)\")\n| groupby(model, function=[sum(is_429_error, as=error_count), count(field=request_id, as=total_calls, distinct=true)])\n| error_count > 0\n| error_percentage := (error_count / total_calls) * 100\n| sort(error_percentage, order=desc)\n| select([model, total_calls, error_count, error_percentage])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "VertexAI Model 429 Throttling Errors (Prod)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "error_count": true,
+              "total_calls": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "error_count": 2,
+              "error_percentage": 3,
+              "model": 0,
+              "total_calls": 1
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 345
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 15,
+        "x": 9,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "request_project_name"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "kubernetes.container.name = \"ipa-api-server\"\nAND kubernetes.pod_labels.release = \"prod\"\n| parseJson(message)\n| cloud := splitString(field=request_url, by=\"\\\\/\", index=2)\n| cloud = \"vertexai\"\n| is_error := if(condition=regex(field=levelname, \"^ERROR$\"), then=1, else=0)\n| is_429 := if(condition=regex(field=message, \"429\"), then=1, else=0)\n| is_429_error := is_error * is_429\n| regex(field=request_url, \"\\/models\\/(?P<model>[^\\/]+)\")\n| groupby([request_project_name, model], function=[sum(is_429_error, as=error_count), count(field=request_id, as=total_calls, distinct=true)])\n| error_percentage := (error_count / total_calls) * 100\n| sort(error_percentage, order=desc)\n| select([request_project_name, model, total_calls, error_count, error_percentage])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "VertexAI Model 429 Throttling Errors (Prod)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "error_count": 2,
+              "error_percentage": 3,
+              "model": 0,
+              "total_calls": 1
+            },
+            "renameByName": {
+              "error_count": "Errors",
+              "error_percentage": "Percentage of Errors",
+              "model": "Model",
+              "total_calls": "Total Calls"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 17,
+        "w": 16,
+        "x": 0,
+        "y": 15
+      },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "kubernetes.container.name = \"ipa-api-server\"\nAND kubernetes.pod_labels.release = \"prod\"\n| parseJson(message)\n| cloud := splitString(field=request_url, by=\"\\\\/\", index=2)\n| cloud = \"vertexai\"\n| levelname = \"ERROR\" AND message = /429/\n| model := splitString(field=request_url, by=\"\\\\/\", index=11)\n| regex(field=request_url, \"\\/models\\/(?P<model>[^\\/]+)\")\n| groupby([@timestamp, model, message])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "VertexAI Model 429 Throttling Errors (Prod)",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 17,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      },
+      "id": 3,
+      "options": {
+        "displayMode": "lcd",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "kubernetes.container.name = \"ipa-api-server\"\nAND kubernetes.pod_labels.release = \"prod\"\n| parseJson(message)\n| cloud := splitString(field=request_url, by=\"\\\\/\", index=2)\n| cloud = \"vertexai\"\n| levelname = \"ERROR\" AND message = /429/\n| model := splitString(field=request_url, by=\"\\\\/\", index=11)\n| regex(field=request_url, \"\\/models\\/(?P<model>[^\\/]+)\")\n| groupby([model])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "VertexAI Model 429 Throttling Errors (Prod)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "json-view"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_count"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 1770
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 444
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 19,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "kubernetes.container.name = \"ipa-api-server\"\nAND kubernetes.pod_labels.release = \"prod\"\n| parseJson(message)\n| cloud := splitString(field=request_url, by=\"\\\\/\", index=2)\n| cloud = \"vertexai\"\n| levelname = \"ERROR\" AND message = /429/\n| model := splitString(field=request_url, by=\"\\\\/\", index=11)\n| regex(field=request_url, \"\\/models\\/(?P<model>[^\\/]+)\")\n| groupby([model, message])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "VertexAI Model 429 Throttling Errors (Prod)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "_count": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "_count": 0,
+              "message": 2,
+              "model": 1
+            },
+            "orderByMode": "manual",
+            "renameByName": {
+              "_count": ""
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "json-view"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_count"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 869
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 444
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_project_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 231
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 25,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "kubernetes.container.name = \"ipa-api-server\"\nAND kubernetes.pod_labels.release = \"prod\"\n| parseJson(message)\n| request_project_name := \"askPG\"\n| cloud := splitString(field=request_url, by=\"\\\\/\", index=2)\n| cloud = \"vertexai\"\n| levelname = \"ERROR\" AND message = /429/\n| model := splitString(field=request_url, by=\"\\\\/\", index=11)\n| regex(field=request_url, \"\\/models\\/(?P<model>[^\\/]+)\")\n| groupby([model, message, request_project_name])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "VertexAI Model 429 Throttling Errors (Prod) AskPG",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "_count": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "_count": 0,
+              "message": 3,
+              "model": 2,
+              "request_project_name": 1
+            },
+            "orderByMode": "manual",
+            "renameByName": {
+              "_count": ""
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 42,
+  "tags": [
+    "L3"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "VertexAI Errors (Prod)",
+  "uid": "mojxqtk",
+  "version": 16
+}

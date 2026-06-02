@@ -1,0 +1,1391 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 9987,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 21,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n|#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(message)\n| request_url = *claude*\n| message = *Request*started*\n| count()\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE Total Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 6,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n|#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(message)\n| request_url = claude\n| levelname = ERROR\n| message != Unclosed*\n| message != \"*Connection lost: SSL*\"\n| count()\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE Errors",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 15,
+        "x": 9,
+        "y": 0
+      },
+      "id": 23,
+      "options": {
+        "displayMode": "lcd",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n| #kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *claude*\n| message = *Request*started*\n| splitString(field=request_url, as=model_and_rest, by=\"/models/\", index=1)      \n| splitString(field=model_and_rest, as=model_with_suffix, by=\"@\", index=0)      \n| splitString(field=model_with_suffix, as=model_name, by=\":\", index=0)          \n| groupby(field=model_name)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE - Model Calls",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "log": 2,
+              "type": "log"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 11,
+        "x": 0,
+        "y": 7
+      },
+      "id": 25,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) |\n#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| message = *Request*started*\n| parseJson(field=message)\n| request_url = *publishers/anthropic/models*  \n| request_url = *claude-*                       \n| timechart(request_url)\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.2"
+        }
+      ],
+      "title": "Claude Endpoints",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 11,
+        "y": 7
+      },
+      "id": 27,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n|#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *claude*\n| message = *Request*started*\n| splitString(field=request_url, as=model_and_rest, by=\"/models/\", index=1) // \"claude-opus-4-6@default:streamRawPredict\"\n| splitString(field=model_and_rest, as=model_name, by=\"@\", index=0)        // \"claude-opus-4-6\"\n| groupby(field=request_project_name) // counts per model_name\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE - Project Calls",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": true,
+            "wrapText": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "#repo"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 254
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@rawstring"
+            },
+            "properties": [
+              {
+                "id": "custom.width"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "container.image.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 346
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "file"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 1035
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.namespace_labels.kubernetes.io/metadata.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 223
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.namespace_labels.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 236
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 2978
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "#kubernetes.namespace"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 263
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.pod_annotations.sidecar.istio.io/status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 316
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.pod_labels.app"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 241
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.pod_labels.release"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 448
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "text"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 1095
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "levelname"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 118
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 162
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_project_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 209
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "asctime"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 202
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 324
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@ingesttimestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 253
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@timestamp.nanos"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 286
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_url"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 966
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 5,
+        "x": 19,
+        "y": 7
+      },
+      "id": 26,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": false,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "kubernetes.container.name"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *publishers/anthropic/models* // only anthropic models\n| request_url != *livez*\n| request_id = *\n| request_project_name != unknown\n| splitString(field=request_url, as=model_and_rest, by=\"/models/\", index=1)      // \"<model>@...\" or \"<model>:rawPredict\"\n| splitString(field=model_and_rest, as=model_with_suffix, by=\"@\", index=0)      // \"<model>\" or \"<model>:rawPredict\"\n| splitString(field=model_with_suffix, as=model_name, by=\":\", index=0)          // normalized \"<model>\"\n| groupby(field=[request_project_name, model_name]) // unique project-model combinations\n| select([request_project_name, model_name])",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Claude Projects",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "asctime": 0,
+              "levelname": 1,
+              "message": 4,
+              "request_id": 5,
+              "request_project_name": 2,
+              "request_url": 3
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "displayName": "INFO Logs",
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 18
+      },
+      "id": 28,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n|#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *claude*\n| levelname = \"INFO\"\n| groupby(field=levelname, function=[count(field=levelname, as=level_count)])\n\n\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE - INFO Logs Count",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "yellow",
+            "mode": "fixed"
+          },
+          "displayName": "WARNING Logs",
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 18
+      },
+      "id": 29,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n|#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *claude*\n| levelname = \"WARNING\"\n| groupby(field=levelname, function=[count(field=levelname, as=level_count)])\n\n\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE - WARNING Logs Count",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "id": 30,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "right",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) \n| #kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *claude*\n| message = *Request*started*\n| splitString(field=request_url, as=model_and_rest, by=\"/models/\", index=1)\n| splitString(field=model_and_rest, as=model_with_suffix, by=\"@\", index=0)\n| splitString(field=model_with_suffix, as=model_name, by=\":\", index=0)\n| timeChart(span=1h, function=count(), series=model_name)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "CLAUDE - Model Calls",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "#repo"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 254
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@rawstring"
+            },
+            "properties": [
+              {
+                "id": "custom.width"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "container.image.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 346
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "file"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 1035
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.namespace_labels.kubernetes.io/metadata.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 223
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.namespace_labels.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 236
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 2978
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "#kubernetes.namespace"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 263
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.pod_annotations.sidecar.istio.io/status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 316
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.pod_labels.app"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 241
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kubernetes.pod_labels.release"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 448
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "text"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 1095
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "levelname"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 118
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 162
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_project_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 209
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "asctime"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 202
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 324
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@ingesttimestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 253
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "@timestamp.nanos"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 286
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_url"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 942
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 22,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 19,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": false,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "levelname"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *publishers/anthropic/models* // only anthropic models\n| request_url != *livez*\n| request_id = *\n| request_project_name != unknown\n| select([asctime, levelname, request_url, request_project_name, request_id, message])\n",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Claude Logs",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "asctime": 0,
+              "levelname": 1,
+              "message": 3,
+              "request_id": 5,
+              "request_project_name": 2,
+              "request_url": 4
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "aks-aif-mt-prod-5f94",
+          "value": "aks-aif-mt-prod-5f94"
+        },
+        "includeAll": false,
+        "name": "cluster",
+        "options": [
+          {
+            "selected": false,
+            "text": "aks-aif-mt-nonprod-ad9d",
+            "value": "aks-aif-mt-nonprod-ad9d"
+          },
+          {
+            "selected": true,
+            "text": "aks-aif-mt-prod-5f94",
+            "value": "aks-aif-mt-prod-5f94"
+          },
+          {
+            "selected": false,
+            "text": "aks-aif-dr-prod-08-8b5b",
+            "value": "aks-aif-dr-prod-08-8b5b"
+          },
+          {
+            "selected": false,
+            "text": "aks-aif-mt-nonprod-ad9d",
+            "value": "aks-aif-mt-nonprod-ad9d"
+          }
+        ],
+        "query": "aks-aif-mt-nonprod-ad9d,aks-aif-mt-prod-5f94,aks-aif-dr-prod-08-8b5b,aks-aif-mt-nonprod-ad9d",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "tenant-genai-platform-prod",
+          "value": "tenant-genai-platform-prod"
+        },
+        "includeAll": false,
+        "name": "namespace",
+        "options": [
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-dev",
+            "value": "tenant-genai-platform-dev"
+          },
+          {
+            "selected": false,
+            "text": "pg-de-cf-genai-platform",
+            "value": "pg-de-cf-genai-platform"
+          },
+          {
+            "selected": true,
+            "text": "tenant-genai-platform-prod",
+            "value": "tenant-genai-platform-prod"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-dr",
+            "value": "tenant-genai-platform-dr"
+          }
+        ],
+        "query": "tenant-genai-platform-dev,pg-de-cf-genai-platform,tenant-genai-platform-prod,tenant-genai-platform-dr",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "prod",
+          "value": "prod"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale Query - #kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace | groupBy([kubernetes.pod_labels.release], function=[])",
+        "description": "",
+        "includeAll": false,
+        "label": "release",
+        "name": "release",
+        "options": [],
+        "query": {
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace | groupBy([kubernetes.pod_labels.release], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 2,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "ipa-api-server",
+          "value": "ipa-api-server"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale Query - #kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace AND kubernetes.pod_labels.release = $release | groupBy([kubernetes.container.name], function=[])",
+        "includeAll": false,
+        "name": "container",
+        "options": [],
+        "query": {
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace AND kubernetes.pod_labels.release = $release | groupBy([kubernetes.container.name], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Anthropic Requests",
+  "uid": "mo4d9bk",
+  "version": 38
+}

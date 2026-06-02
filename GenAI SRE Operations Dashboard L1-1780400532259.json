@@ -1,0 +1,1801 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 8965,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 73,
+      "panels": [],
+      "title": "SLOs Based on Errors",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "GenAI platform availability SLO - Target 99.5% for 28day window",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 3,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Status Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 99.5
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 0,
+        "y": 1
+      },
+      "id": 70,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "text": {}
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 5xx and 429 status codes as errors\n| is_5xx_error := if(regex(field=status_code, \"(5..|429)\"), then=1, else=0)\n\n// Step 3: Aggregate the total count of requests and the total count of 5xx errors\n| [sum(is_5xx_error, as=error_count), count(as=total_count)]\n\n| slo_metric := if(total_count > 0, then=(((total_count - error_count) / total_count) * 100), else=100)\n\n// Step 5: Display the final SLO metric\n| select(slo_metric)",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "SLO Availability (5xx,429)",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Error Budget Used (Target SLO - 99.5)\nfor 28 day window",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 3,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
+      "id": 101,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 5xx status codes as errors\n| is_5xx_error := if(regex(field=status_code, \"(5..|429)\"), then=1, else=0)\n\n// Step 3: Aggregate the total count of requests and the total count of 5xx errors.\n| [sum(is_5xx_error, as=error_count), count(as=total_count)]\n\n| allowed_error_count := total_count * (1 - 0.995)\n\n// Step 5: Calculate the percentage of the error budget that has been used.\n// If no errors are allowed (i.e., no requests), then 0% of the budget has been used.\n| error_budget_used_percent := if(allowed_error_count > 0, then=((error_count / allowed_error_count) * 100), else=0)\n\n// Step 6: Display the final percentage of the error budget that has been used.\n| select(error_budget_used_percent)\n\n\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Error Budget used (5xx,429)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Platform unavailability Burn rate",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Burn Rate",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "links": [
+            {
+              "oneClick": true,
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "max": 14,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 6
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 102,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 5xx status codes as errors.\n| is_5xx_error := if(regex(field=status_code, \"(5..|429)\"), then=1, else=0)\n\n// Step 3: Create a timechart with a 1-hour span, getting the sum of errors and total count for each bucket.\n| timechart(span=1h, function=[sum(is_5xx_error, as=errors_in_bucket), count(as=total_in_bucket)])\n\n// Step 4: Calculate the burn rate for each 1-hour bucket.\n// Burn Rate = (Actual Error Rate) / (Allowed Error Rate Threshold)\n// Allowed Error Rate for 99.5% SLO is 0.5% or 0.005.\n| burn_rate_1h := if(total_in_bucket > 0, then=((errors_in_bucket / total_in_bucket) / (1 - 0.995)), else=0)\n\n// Step 5: Display the bucket timestamp and the calculated burn rate.\n| select([@timestamp, _bucket, burn_rate_1h])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        },
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "hide": false,
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 5xx status codes as errors.\n| is_5xx_error := if(regex(field=status_code, \"(5..|429)\"), then=1, else=0)\n\n// Step 3: Create a timechart with a 1-hour span, getting the sum of errors and total count for each bucket.\n| timechart(span=10h, function=[sum(is_5xx_error, as=errors_in_bucket), count(as=total_in_bucket)])\n\n// Step 4: Calculate the burn rate for each 1-hour bucket.\n// Burn Rate = (Actual Error Rate) / (Allowed Error Rate Threshold)\n// Allowed Error Rate for 99.5% SLO is 0.5% or 0.005.\n| burn_rate_10h := if(total_in_bucket > 0, then=((errors_in_bucket / total_in_bucket) / (1 - 0.995)), else=0)\n\n| @timestamp := _bucket\n// Step 5: Display the bucket timestamp and the calculated burn rate.\n| select([@timestamp, _bucket, burn_rate_10h])",
+          "refId": "C",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Burn rate (5xx, 429 Errors)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Target SLO is 97% for 28day window",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "slo_metric"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": 0
+                    },
+                    {
+                      "color": "green",
+                      "value": 97
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 12,
+        "y": 1
+      },
+      "id": 71,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 4xx status codes as errors\n| is_4xx_error := if(regex(field=status_code, \"4(?!29)\\\\d{2}\"), then=1, else=0)\n\n// Step 3: Aggregate the total count of requests and the total count of 4xx errors\n| [sum(is_4xx_error, as=error_count), count(as=total_count)]\n\n| slo_metric := if(total_count > 0, then=(((total_count - error_count) / total_count) * 100), else=100)\n\n// Step 5: Display the final SLO metric\n| select(slo_metric)",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "SLO Client Errors (4xx)",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Error Budget Used (Target SLO - 97)\nfor 28 day window",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 3,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 15,
+        "y": 1
+      },
+      "id": 118,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 5xx status codes as errors\n| is_5xx_error := if(regex(field=status_code, \"4(?!29)\\\\d{2}\"), then=1, else=0)\n\n// Step 3: Aggregate the total count of requests and the total count of 5xx errors.\n| [sum(is_5xx_error, as=error_count), count(as=total_count)]\n\n| allowed_error_count := total_count * (1 - 0.97)\n\n// Step 5: Calculate the percentage of the error budget that has been used.\n// If no errors are allowed (i.e., no requests), then 0% of the budget has been used.\n| error_budget_used_percent := if(allowed_error_count > 0, then=((error_count / allowed_error_count) * 100), else=0)\n\n// Step 6: Display the final percentage of the error budget that has been used.\n| select(error_budget_used_percent)\n\n\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Error Budget used (4xx)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Users configuration issues spike burn rate",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Burn Rate",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "links": [
+            {
+              "oneClick": true,
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "max": 14,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 6
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 107,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "hoverProximity": -1,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 4xx status codes as errors.\n| is_4xx_error := if(regex(field=status_code, \"4(?!29)\\\\d{2}\"), then=1, else=0)\n\n// Step 3: Create a timechart with a 1-hour span, getting the sum of errors and total count for each bucket.\n| timechart(span=1h, function=[sum(is_4xx_error, as=errors_in_bucket), count(as=total_in_bucket)])\n\n// Step 4: Calculate the burn rate for each 1-hour bucket.\n// Burn Rate = (Actual Error Rate) / (Allowed Error Rate Threshold)\n// Allowed Error Rate for 97% SLO is 3% or 0.03.\n| burn_rate_1h := if(total_in_bucket > 0, then=((errors_in_bucket / total_in_bucket) / (1 - 0.97)), else=0)\n\n// Step 5: Display the bucket timestamp and the calculated burn rate.\n| select([_bucket, burn_rate_1h])",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        },
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "hide": false,
+          "lsql": "HTTP\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n// Step 1: Extract the 3-digit status code from the log message\n| regex(field=message, \"\\\"\\\\s.*?(?P<status_code>\\\\d{3})\")\n\n// Step 2: Flag requests with 5xx status codes as errors.\n| is_5xx_error := if(regex(field=status_code, \"4(?!29)\\\\d{2}\"), then=1, else=0)\n\n// Step 3: Create a timechart with a 1-hour span, getting the sum of errors and total count for each bucket.\n| timechart(span=10h, function=[sum(is_5xx_error, as=errors_in_bucket), count(as=total_in_bucket)])\n\n// Step 4: Calculate the burn rate for each 1-hour bucket.\n// Burn Rate = (Actual Error Rate) / (Allowed Error Rate Threshold)\n// Allowed Error Rate for 97% SLO is 3% or 0.03.\n| burn_rate_10h := if(total_in_bucket > 0, then=((errors_in_bucket / total_in_bucket) / (1 - 0.97)), else=0)\n\n// Step 5: Display the bucket timestamp and the calculated burn rate.\n| select([_bucket, burn_rate_10h])",
+          "refId": "C",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Burn rate (4xx Errors)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 115,
+      "panels": [],
+      "title": "OpenAI/VertexAI Requests Latency Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "dark-green",
+                "value": 5
+              },
+              {
+                "color": "#EAB839",
+                "value": 8
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 0,
+        "y": 9
+      },
+      "id": 90,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/.*/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "\"execution statistics:\" AND \"openAI\"\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n| regex(field=message, \"execution statistics: {(?:.*?'redis':\\\\s*(?<redis>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.rate_limit':\\\\s*(?<redis_rate_limit>\\\\d+\\\\.\\\\d+))?(?:.*?'openAI':\\\\s*(?<openAI>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB':\\\\s*(?<cosmosDB>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB\\\\.logging_prompt':\\\\s*(?<cosmosDB_logging_prompt>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB\\\\.logging_consumption':\\\\s*(?<cosmosDB_logging_consumption>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.logging_consumption':\\\\s*(?<redis_logging_consumption>\\\\d+\\\\.\\\\d+))?.*}\")\n\n// Step 3: Sum the component latencies. Non-existent fields are treated as 0.\n| total_component_latency := redis  + openAI + cosmosDB\n\n// Step 4: Calculate the 95th percentile of the total calculated latency.\n| percentile(field=total_component_latency, percentiles=[95], as=latency)\n\n// Step 5: Assign the result to a clearly named field and display it.\n| p95_latency_sec := latency_95\n| select(p95_latency_sec)\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "SLO Latency(P95) OpenAI Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "dark-green",
+                "value": 5
+              },
+              {
+                "color": "#EAB839",
+                "value": 8
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 4,
+        "y": 9
+      },
+      "id": 121,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/.*/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "\"execution statistics:\" AND \"openAI\"\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n| regex(field=message, \"execution statistics: {(?:.*?'redis':\\\\s*(?<redis>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.rate_limit':\\\\s*(?<redis_rate_limit>\\\\d+\\\\.\\\\d+))?(?:.*?'openAI':\\\\s*(?<openAI>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB':\\\\s*(?<cosmosDB>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB\\\\.logging_prompt':\\\\s*(?<cosmosDB_logging_prompt>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB\\\\.logging_consumption':\\\\s*(?<cosmosDB_logging_consumption>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.logging_consumption':\\\\s*(?<redis_logging_consumption>\\\\d+\\\\.\\\\d+))?.*}\")\n\n// Step 3: Sum the component latencies. Non-existent fields are treated as 0.\n| total_component_latency := redis + cosmosDB \n\n// Step 4: Calculate the 95th percentile of the total calculated latency.\n| percentile(field=total_component_latency, percentiles=[95], as=latency)\n\n// Step 5: Assign the result to a clearly named field and display it.\n| p95_latency_sec := latency_95\n| select(p95_latency_sec)\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "SLO Platform Latency(P95) OpenAI Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Error budget used (P95 Latency for 99.5% of time)  > 50 seconds",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 8,
+        "y": 9
+      },
+      "id": 104,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "\"execution statistics:\" AND \"openAI\"\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n| regex(field=message, \"execution statistics: {(?:.*?'redis':\\\\s*(?<redis>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.rate_limit':\\\\s*(?<redis_rate_limit>\\\\d+\\\\.\\\\d+))?(?:.*?'openAI':\\\\s*(?<openAI>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB':\\\\s*(?<cosmosDB>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB\\\\.logging_prompt':\\\\s*(?<cosmosDB_logging_prompt>\\\\d+\\\\.\\\\d+))?(?:.*?'cosmosDB\\\\.logging_consumption':\\\\s*(?<cosmosDB_logging_consumption>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.logging_consumption':\\\\s*(?<redis_logging_consumption>\\\\d+\\\\.\\\\d+))?.*}\")\n\n// Step 3: Sum the component latencies for each request.\n| total_component_latency := redis +  openAI + cosmosDB \n\n// Step 4: Group requests into 5-minute buckets and calculate the P95 latency for each bucket.\n| timechart(span=5m, function=[percentile(field=total_component_latency, percentiles=[95], as=latency)])\n\n// Step 5: For each 5-minute bucket, flag if its P95 latency exceeds the 100-second SLO target.\n| is_slo_failure := if(latency_95 > 50, then=1, else=0)\n\n// Step 6: Aggregate the results to find the total number of intervals and the number of failed intervals.\n| [sum(is_slo_failure, as=failed_intervals), count(as=total_intervals)]\n\n// Step 7: Calculate the actual percentage of time intervals that failed the SLO.\n| percent_of_time_failed := if(total_intervals > 0, then=((failed_intervals / total_intervals) * 100), else=0)\n\n// Step 8: Calculate the error budget used as a percentage of the allowed budget (5% for a 95% SLO).\n| error_budget_used_percent := if(percent_of_time_failed > 0, then=((percent_of_time_failed / 5) * 100), else=0)\n\n// Step 9: Display the final error budget used percentage.\n| select(error_budget_used_percent)\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Error Budget Used (Latency OpenAI)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "GenAI L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "dark-green",
+                "value": 15
+              },
+              {
+                "color": "#EAB839",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 12,
+        "y": 9
+      },
+      "id": 89,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/.*/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "\"execution statistics:\" AND \"'vertexAI':\"\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n| regex(field=message, \"execution statistics: {(?:.*?'redis':\\\\s*(?<redis>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.rate_limit':\\\\s*(?<redis_rate_limit>\\\\d+\\\\.\\\\d+))?(?:.*?'multimedia':\\\\s*(?<multimedia>\\\\d+\\\\.\\\\d+))?(?:.*?'multimedia\\\\.request':\\\\s*(?<multimedia_request>\\\\d+\\\\.\\\\d+))?(?:.*?'vertexAI':\\\\s*(?<vertexAI>\\\\d+\\\\.\\\\d+))?.*}\")\n\n// Step 3: Sum the component latencies. Non-existent fields are treated as 0.\n| total_component_latency := redis  + multimedia + multimedia_request + vertexAI\n\n// Step 4: Calculate the 95th percentile of the total calculated latency.\n| percentile(field=total_component_latency, percentiles=[95], as=latency)\n\n// Step 5: Assign the result to a clearly named field and display it.\n| p95_latency_sec := latency_95\n| select(p95_latency_sec)\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "SLO Latency(P95) VertexAI Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "GenAI L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "dark-green",
+                "value": 15
+              },
+              {
+                "color": "#EAB839",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 16,
+        "y": 9
+      },
+      "id": 122,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/.*/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "\"execution statistics:\" AND \"'vertexAI':\"\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n| regex(field=message, \"execution statistics: {(?:.*?'redis':\\\\s*(?<redis>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.rate_limit':\\\\s*(?<redis_rate_limit>\\\\d+\\\\.\\\\d+))?(?:.*?'multimedia':\\\\s*(?<multimedia>\\\\d+\\\\.\\\\d+))?(?:.*?'multimedia\\\\.request':\\\\s*(?<multimedia_request>\\\\d+\\\\.\\\\d+))?(?:.*?'vertexAI':\\\\s*(?<vertexAI>\\\\d+\\\\.\\\\d+))?.*}\")\n\n// Step 3: Sum the component latencies. Non-existent fields are treated as 0.\n| total_component_latency := redis  + multimedia + multimedia_request\n\n// Step 4: Calculate the 95th percentile of the total calculated latency.\n| percentile(field=total_component_latency, percentiles=[95], as=latency)\n\n// Step 5: Assign the result to a clearly named field and display it.\n| p95_latency_sec := latency_95\n| select(p95_latency_sec)\n\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "SLO Platform Latency(P95) VertexAI Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Error budget used (P95 Latency for 95% of time)  > 150 seconds",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "GenAI L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 20,
+        "y": 9
+      },
+      "id": 105,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/.*/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "\"execution statistics:\" AND \"'vertexAI':\"\n\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 2: Use regex to parse and extract individual component latencies.\n| regex(field=message, \"execution statistics: {(?:.*?'redis':\\\\s*(?<redis>\\\\d+\\\\.\\\\d+))?(?:.*?'redis\\\\.rate_limit':\\\\s*(?<redis_rate_limit>\\\\d+\\\\.\\\\d+))?(?:.*?'multimedia':\\\\s*(?<multimedia>\\\\d+\\\\.\\\\d+))?(?:.*?'multimedia\\\\.request':\\\\s*(?<multimedia_request>\\\\d+\\\\.\\\\d+))?(?:.*?'vertexAI':\\\\s*(?<vertexAI>\\\\d+\\\\.\\\\d+))?.*}\")\n\n// Step 3: Sum the component latencies for each request.\n| total_component_latency := redis + multimedia + multimedia_request + vertexAI\n\n// Step 4: Group requests into 5-minute buckets and calculate the P95 latency for each bucket.\n| timechart(span=5m, function=[percentile(field=total_component_latency, percentiles=[95], as=latency)])\n\n// Step 5: For each 5-minute bucket, flag if its P95 latency exceeds the 100-second SLO target.\n| is_slo_failure := if(latency_95 > 150, then=1, else=0)\n\n// Step 6: Aggregate the results to find the total number of intervals and the number of failed intervals.\n| [sum(is_slo_failure, as=failed_intervals), count(as=total_intervals)]\n\n// Step 7: Calculate the actual percentage of time intervals that failed the SLO.\n| percent_of_time_failed := if(total_intervals > 0, then=((failed_intervals / total_intervals) * 100), else=0)\n\n// Step 8: Calculate the error budget used as a percentage of the allowed budget (0.05% for a 95% SLO).\n| error_budget_used_percent := if(percent_of_time_failed > 0, then=((percent_of_time_failed / (1-0.95)) * 100), else=0)\n\n// Step 9: Display the final error budget used percentage.\n| select(error_budget_used_percent)\n",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Error Budget Used (Latency VertexAI)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 120,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "formatAs": "logs",
+          "lsql": "// Step 1: Filter for logs that represent HTTP requests using a fast free-text search.\n\"HTTP\" AND not livez\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n| kubernetes.pod_labels.release=$release\n\n// Step 2: Create a time series chart that counts the events in 1-second buckets.\n| timechart(span=1s, function=count(as=all_requests_per_second))",
+          "queryType": "LQL",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        },
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "hide": false,
+          "lsql": "// Step 1: Filter for logs that represent HTTP requests using a fast free-text search.\n\"HTTP\" AND not livez AND openai\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n// Step 2: Create a time series chart that counts the events in 1-second buckets.\n| timechart(span=1s, function=count(as=openai_requests_per_second))",
+          "refId": "B",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        },
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "hide": false,
+          "lsql": "// Step 1: Filter for logs that represent HTTP requests using a fast free-text search.\n\"HTTP\" AND not livez AND vertexai\n| kubernetes.container.name := #kubernetes.container.name\n\n| drop(#kubernetes.container.name) //aks repository restructure - line can be deleted after 2025-06-01 \n\n| kubernetes.container.name=/$container/i\n\n| #kubernetes.namespace=/$namespace/i\n\n| #kubernetes.cluster=/$cluster/i\n\n// Step 2: Create a time series chart that counts the events in 1-second buckets.\n| timechart(span=1s, function=count(as=vertexai_requests_per_second))",
+          "refId": "C",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Request Per Second",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 93,
+      "panels": [],
+      "title": "AKS & Azure Component Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P5DCFC7561CCDE821"
+      },
+      "description": "You need to see min two containers running. One for Frontend second for backend",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Number of Pods"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pod Name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 163
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 3,
+        "x": 0,
+        "y": 24
+      },
+      "id": 94,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P5DCFC7561CCDE821"
+          },
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "count by(container) (cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace=\"$namespace\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{container}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Count",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Number of Pods",
+              "container": "Pod Name"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P5DCFC7561CCDE821"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 5,
+        "x": 3,
+        "y": 24
+      },
+      "id": 119,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Time"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "kube_pod_container_status_last_terminated_reason{cluster=\"$cluster\", namespace=\"$namespace\", container=\"$container\"}",
+          "format": "table",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Restart Reasons",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Value": true,
+              "__name__": true,
+              "client_name": true,
+              "cluster": true,
+              "cluster_group": true,
+              "endpoint": true,
+              "facility_name": true,
+              "instance": true,
+              "job": true,
+              "monitor": true,
+              "namespace": true,
+              "project": true,
+              "prometheus": true,
+              "replica": true,
+              "service": true,
+              "tf_module_version": true,
+              "uid": true
+            },
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Time": "Time",
+              "container": "Container",
+              "pod": "Pod",
+              "reason": "Reason to Restart"
+            }
+          }
+        },
+        {
+          "id": "limit",
+          "options": {
+            "limitField": "15"
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P5DCFC7561CCDE821"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "L2 Dashboard",
+              "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2?orgId=1&from=now-6h&to=now&timezone=browser&var-cluster=aks-aif-mt-prod-5f94&var-namespace=tenant-genai-platform-prod&var-release=prod&var-container=ipa-api-server"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 3,
+        "x": 8,
+        "y": 24
+      },
+      "id": 97,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "max_over_time(azure_cache_redis_usedmemorypercentage_percent_maximum{resourceName=\"genaipl-redis-prd\"}[$__range])",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Redis Max Memory Usage",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P5DCFC7561CCDE821"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 3,
+        "x": 11,
+        "y": 24
+      },
+      "id": 98,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "azure_dbformysql_flexibleservers_io_consumption_percent_percent_average{resourceName=\"genaipl-redis-prd\"}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cosmos Max Memory Usage",
+      "type": "gauge"
+    }
+  ],
+  "preload": true,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "L1"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "aks-aif-mt-prod-5f94",
+          "value": "aks-aif-mt-prod-5f94"
+        },
+        "includeAll": false,
+        "name": "cluster",
+        "options": [
+          {
+            "selected": false,
+            "text": "aks-aif-mt-nonprod-ad9d",
+            "value": "aks-aif-mt-nonprod-ad9d"
+          },
+          {
+            "selected": true,
+            "text": "aks-aif-mt-prod-5f94",
+            "value": "aks-aif-mt-prod-5f94"
+          },
+          {
+            "selected": false,
+            "text": "aks-aif-dr-prod-08-8b5b",
+            "value": "aks-aif-dr-prod-08-8b5b"
+          }
+        ],
+        "query": "aks-aif-mt-nonprod-ad9d,aks-aif-mt-prod-5f94,aks-aif-dr-prod-08-8b5b",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "tenant-genai-platform-prod",
+          "value": "tenant-genai-platform-prod"
+        },
+        "includeAll": false,
+        "name": "namespace",
+        "options": [
+          {
+            "selected": false,
+            "text": "pg-de-cf-genai-platform",
+            "value": "pg-de-cf-genai-platform"
+          },
+          {
+            "selected": false,
+            "text": "pg-de-cf-genai-platform\nhas context menu",
+            "value": "pg-de-cf-genai-platform\nhas context menu"
+          },
+          {
+            "selected": true,
+            "text": "tenant-genai-platform-prod",
+            "value": "tenant-genai-platform-prod"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-dev",
+            "value": "tenant-genai-platform-dev"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-dr",
+            "value": "tenant-genai-platform-dr"
+          },
+          {
+            "selected": true,
+            "text": "tenant-genai-platform-prod",
+            "value": "tenant-genai-platform-prod"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-ext-dev",
+            "value": "tenant-genai-platform-ext-dev"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-ext-stg",
+            "value": "tenant-genai-platform-ext-stg"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-ext-prod",
+            "value": "tenant-genai-platform-ext-prod"
+          }
+        ],
+        "query": "pg-de-cf-genai-platform,pg-de-cf-genai-platform\nhas context menu, tenant-genai-platform-prod,\ttenant-genai-platform-dev, tenant-genai-platform-dr, tenant-genai-platform-prod, tenant-genai-platform-ext-dev, tenant-genai-platform-ext-stg, tenant-genai-platform-ext-prod",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "prod",
+          "value": "prod"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "",
+        "includeAll": false,
+        "label": "release",
+        "name": "release",
+        "options": [],
+        "query": {
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace | groupBy([kubernetes.pod_labels.release], function=[])",
+          "queryType": "LQL",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 2,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "ipa-api-server",
+          "value": "ipa-api-server"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "",
+        "includeAll": false,
+        "name": "container",
+        "options": [],
+        "query": {
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace AND kubernetes.pod_labels.release = $release | groupBy([kubernetes.container.name], function=[])",
+          "queryType": "LQL",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "2026-05-31T09:55:13.586Z",
+    "to": "2026-05-31T09:55:26.986Z"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "GenAI SRE Operations Dashboard L1",
+  "uid": "jec8v8c",
+  "version": 182,
+  "weekStart": "monday"
+}
