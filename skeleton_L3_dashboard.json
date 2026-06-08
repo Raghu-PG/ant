@@ -1,0 +1,828 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L2"
+      ],
+      "targetBlank": false,
+      "title": "L2 dashboards",
+      "tooltip": "",
+      "type": "dashboards"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L3"
+      ],
+      "targetBlank": false,
+      "title": "Related L3",
+      "tooltip": "",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 29,
+      "panels": [],
+      "title": "1. Overview / Golden Signals",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "id": 30,
+      "type": "text",
+      "title": "1. Overview / Golden Signals \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 1 \u2014 guidance\n\n**Purpose:** One-glance health of this subsystem.\n\n**Golden signal:** All four\n\n**Example panels (flex):** Total, Successful, Failed, Error Rate, Availability (server-side SLO), p95 Latency (stats)\n\n**Required fields/labels:** distinct request_id; source-of-truth failure signal; latency source\n\n**Drill-down:** Top of the dashboard.\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 31,
+      "options": {},
+      "title": "[example] Total",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 32,
+      "options": {},
+      "title": "[example] Failed",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 33,
+      "options": {},
+      "title": "[example] Error Rate",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 34,
+      "options": {},
+      "title": "[example] p95 Latency",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 35,
+      "panels": [],
+      "title": "2. Request Volume (Throughput)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "id": 36,
+      "type": "text",
+      "title": "2. Request Volume (Throughput) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 2 \u2014 guidance\n\n**Purpose:** How much traffic and where.\n\n**Golden signal:** Throughput\n\n**Example panels (flex):** Count over time, by model/dimension (time + bar), by project\n\n**Required fields/labels:** request_id, model/dimension, project\n\n**Drill-down:** \n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "id": 37,
+      "options": {},
+      "title": "[example] Requests Over Time",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "id": 38,
+      "options": {},
+      "title": "[example] By Model",
+      "type": "bargauge",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 39,
+      "panels": [],
+      "title": "3. Upstream Errors (source-of-truth signal)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 31
+      },
+      "id": 40,
+      "type": "text",
+      "title": "3. Upstream Errors (source-of-truth signal) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 3 \u2014 guidance\n\n**Purpose:** True failures OF THIS SUBSYSTEM (classify by status/route, not log level).\n\n**Golden signal:** Errors\n\n**Example panels (flex):** Error-rate over time, status codes over time, requests-by-status-code, errors-by-model\n\n**Required fields/labels:** structured status code; route/integration metadata\n\n**Drill-down:** Pair with stack 4 (keep them separate).\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 31
+      },
+      "id": 41,
+      "options": {},
+      "title": "[example] Error Rate Over Time",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 31
+      },
+      "id": 42,
+      "options": {},
+      "title": "[example] Errors by Model",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 43,
+      "panels": [],
+      "title": "4. Secondary / Platform Errors",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 48
+      },
+      "id": 44,
+      "type": "text",
+      "title": "4. Secondary / Platform Errors \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 4 \u2014 guidance\n\n**Purpose:** Broad/ancillary errors during these requests, clearly separated from true failures.\n\n**Golden signal:** Errors\n\n**Example panels (flex):** Platform error count over time, top platform error messages (label: 'includes sub-steps')\n\n**Required fields/labels:** log level / exception message\n\n**Drill-down:** Optional but recommended; never merged into the KPI.\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 48
+      },
+      "id": 45,
+      "options": {},
+      "title": "[example] Platform Error Count",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 48
+      },
+      "id": 46,
+      "options": {},
+      "title": "[example] Top Error Messages",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "id": 47,
+      "panels": [],
+      "title": "5. Latency",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 65
+      },
+      "id": 48,
+      "type": "text",
+      "title": "5. Latency \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 5 \u2014 guidance\n\n**Purpose:** Latency distribution and where it concentrates.\n\n**Golden signal:** Latency\n\n**Example panels (flex):** p50/p90/p95/p99 over time, latency by model/dimension\n\n**Required fields/labels:** latency value source (note the unit)\n\n**Drill-down:** Drop if latency unavailable; don't fake an average.\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 65
+      },
+      "id": 49,
+      "options": {},
+      "title": "[example] Latency Percentiles",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 65
+      },
+      "id": 50,
+      "options": {},
+      "title": "[example] Latency by Model",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 81
+      },
+      "id": 51,
+      "panels": [],
+      "title": "6. Breakdown",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 82
+      },
+      "id": 52,
+      "type": "text",
+      "title": "6. Breakdown \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 6 \u2014 guidance\n\n**Purpose:** Which model / dimension / project is affected.\n\n**Golden signal:** All\n\n**Example panels (flex):** Usage (project x model, distinct requests), success/failure ratio per model\n\n**Required fields/labels:** model, project, request_id, failure signal\n\n**Drill-down:** \n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 82
+      },
+      "id": 53,
+      "options": {},
+      "title": "[example] Usage (Project x Model)",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 82
+      },
+      "id": 54,
+      "options": {},
+      "title": "[example] Success/Failure by Model",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 100
+      },
+      "id": 55,
+      "panels": [],
+      "title": "7. Troubleshooting",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 101
+      },
+      "id": 56,
+      "type": "text",
+      "title": "7. Troubleshooting \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 7 \u2014 guidance\n\n**Purpose:** Jump to the actual failing requests.\n\n**Golden signal:** \u2014\n\n**Example panels (flex):** Recent failures (with status code + correlation id), full filtered log explorer\n\n**Required fields/labels:** asctime, status code, request_id, message\n\n**Drill-down:** \n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 8,
+        "y": 101
+      },
+      "id": 57,
+      "options": {},
+      "title": "[example] Recent Failures",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "GenAI",
+    "<PROVIDER>",
+    "L3",
+    "TEMPLATE"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "cluster",
+        "name": "cluster",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "namespace",
+        "name": "namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "environment",
+        "name": "environment",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "container",
+        "name": "container",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "project",
+        "name": "project",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom",
+        "allValue": "*"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "model",
+        "name": "model",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom",
+        "allValue": "*"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "TEMPLATE - <Provider> Requests (L3 Deep Dive)",
+  "uid": "",
+  "version": 1
+}

@@ -1,0 +1,431 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L2"
+      ],
+      "targetBlank": false,
+      "title": "L2 dashboards",
+      "tooltip": "",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "panels": [],
+      "title": "1. SLO & Error Budget",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "id": 3,
+      "type": "text",
+      "title": "1. SLO & Error Budget \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 1 \u2014 guidance\n\n**Purpose:** Are we within SLO, how much error budget is left, and are we burning it fast?\n\n**Golden signal:** Availability / Errors\n\n**Example panels (flex):** Availability SLO gauge, error-budget-used stat, multi-window burn-rate timeseries\n\n**Required fields/labels:** SLO target, error/availability metric, time window\n\n**Drill-down:** Each tile data-links to the L2 dashboard with var-* + time.\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 1
+      },
+      "id": 4,
+      "options": {},
+      "title": "[example] Availability SLO",
+      "type": "gauge",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 1
+      },
+      "id": 5,
+      "options": {},
+      "title": "[example] Burn rate (multi-window)",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 6,
+      "panels": [],
+      "title": "2. Golden-Signal Topline",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 18
+      },
+      "id": 7,
+      "type": "text",
+      "title": "2. Golden-Signal Topline \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 2 \u2014 guidance\n\n**Purpose:** Platform-wide error rate, p95 latency, throughput and availability at a glance.\n\n**Golden signal:** All four\n\n**Example panels (flex):** Aggregate error-rate stat, p95 latency stat, requests/sec timeseries, availability stat\n\n**Required fields/labels:** aggregate error/latency/throughput metrics\n\n**Drill-down:** Tiles link to L2.\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 8,
+        "y": 18
+      },
+      "id": 8,
+      "options": {},
+      "title": "[example] Error Rate",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 12,
+        "y": 18
+      },
+      "id": 9,
+      "options": {},
+      "title": "[example] p95 Latency",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 18
+      },
+      "id": 10,
+      "options": {},
+      "title": "[example] Requests/sec",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 11,
+      "panels": [],
+      "title": "3. Component & Dependency Health",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 35
+      },
+      "id": 12,
+      "type": "text",
+      "title": "3. Component & Dependency Health \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "### Stack 3 \u2014 guidance\n\n**Purpose:** Are supporting systems healthy (compute, cache, DB, mesh)?\n\n**Golden signal:** Availability\n\n**Example panels (flex):** Pod count/restarts table, Redis/Cosmos memory gauges, dependency up/down\n\n**Required fields/labels:** pod metrics, dependency metrics\n\n**Drill-down:** Tiles link to L2 / L3 pods.\n\n_Replace the example tiles with real panels for your subsystem. Keep the stack even if you can only fill one panel._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 35
+      },
+      "id": 13,
+      "options": {},
+      "title": "[example] Pod Count / Restarts",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 35
+      },
+      "id": 14,
+      "options": {},
+      "title": "[example] Dependency Memory",
+      "type": "gauge",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "L1",
+    "TEMPLATE"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "cluster",
+        "name": "cluster",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "namespace",
+        "name": "namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "environment",
+        "name": "environment",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "container",
+        "name": "container",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "TEMPLATE - <Scope> L1 (Platform Health)",
+  "uid": "",
+  "version": 1
+}
