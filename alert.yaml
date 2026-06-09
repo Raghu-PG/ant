@@ -1,21 +1,84 @@
-# =============================================================================
-# oss-ultimate-agentic-ai.prod-ami.rules.yaml  —  Prometheus rules for the
-# Cosmos DB account ossultimateprod13db-cosmos and the Ultimate Agentic AI platform.
+# # =============================================================================
+#  oss-ultimate-agentic-ai.prod-ami.rules.yaml
 #
-# Groups: (A) Cosmos recording  (B) Cosmos alerts  (A2) CPU recording  (C) Platform alerts.
-# Suffix _ANOMALY = z-score predictive (Low → EMAIL only).
-# Suffix _STD_THRESH = fixed threshold (Warning → SNOW ticket; Critical → ticket + PAGE).
-# Low severity carries basic labels (email); Warning/Critical also carry
-# `conveyor_route: universal_connector` + `snow_*` labels (Spyglass opens SNOW incident).
+#  WHAT THIS FILE IS
+#  -----------------
+#  Prometheus alerting + recording rules for the Azure Cosmos DB account
+#  `ossultimateprod13db-cosmos` that backs the Ultimate Agentic AI platform,
+#  plus the platform's other existing infrastructure alerts.
 #
-# Routing:    Low → EMAIL   |   Warning → SNOW   |   Critical → SNOW + PAGE (P1)
+#  HOW THE FILE IS ORGANISED  (three groups, top to bottom)
+#  --------------------------------------------------------
+#    LAYER A  Recording rules  - pre-computed helper metrics (baselines,
+#                                z-scores, etc.). They do the heavy math once
+#                                so the alerts below stay simple and cheap.
+#    LAYER B  Cosmos alerts     - the six Cosmos DB alerts (this is the focus
+#                                of this file).
+#    LAYER C  Existing alerts   - unrelated platform alerts (App Service,
+#                                Redis, cluster, pods, Databricks), unchanged.
+#
+#  THE THREE KINDS OF COSMOS ALERT
+#  ----------------------------------------------------------
+#    1. ANOMALY (predictive)  - "this operation is behaving unusually for
+#       itself". Compares each operation against its OWN recent history using
+#       a z-score, so it can spot a Read going from 0.6 ms to 30 ms even though
+#       30 ms is far below any fixed limit. Early warning -> EMAIL ONLY.
+#    2. STANDARD THRESHOLD     - "latency crossed a hard line we care about".
+#       Simple fixed bands (200 ms warning, 300 ms critical). Confirmed
+#       problem -> ServiceNow ticket (critical also pages).
+#    3. SAFETY NETS            - heartbeat (is the metric even flowing?) and
+#       service-availability dip. Threshold-style -> ServiceNow ticket.
+#
+#  NAMING CONVENTION  (the suffix tells you the alert type at a glance)
+#  -------------------------------------------------------------------
+#    _ANOMALY     -> statistical / baseline-deviation detector
+#    _STD_THRESH  -> fixed-threshold / hard-failure detector
+#
+#  ROUTING  (severity decides where an alert goes)
+#  -----------------------------------------------
+#    Severity   Alert name                                   Routes to
+#    --------   ----------                                   ---------
+#    Low        B1  CosmosDB_Latency_ANOMALY                 EMAIL ONLY
+#    Low        B2  CosmosDB_Latency_WoW_ANOMALY             EMAIL ONLY
+#    Warning    B3  CosmosDB_PointOpLatency_Warning_STD_THRESH   SNOW ticket (no page)
+#    Critical   B4  CosmosDB_PointOpLatency_Critical_STD_THRESH  SNOW ticket + PAGE (P1)
+#    Warning    B5  CosmosDB_LatencyMetricMissing_STD_THRESH     SNOW ticket (safety net)
+#    Warning    B6  CosmosDB_ServiceAvailability_STD_THRESH      SNOW ticket
+#
+#    The mechanism: Low-severity alerts carry only the basic notification
+#    labels, so Spyglass just emails them. Warning/Critical alerts ALSO carry
+#    `conveyor_route: universal_connector` + the `snow_*` labels, which is what
+#    tells Spyglass to open a ServiceNow incident. Email is the early-warning
+#    channel; ServiceNow is the action channel; the pager is the emergency one.
+#
 # =============================================================================
+
 groups:
-  # ===== LAYER A — Cosmos recording rules (pre-computed baselines, z-scores, WoW ratio) =====
+
+  # ===========================================================================
+  # LAYER A   RECORDING RULES
+  #
+  # A "recording rule" pre-computes a query and stores the result as its own
+  # new metric, refreshed here once per minute. The alerts in Layer B then
+  # read these ready-made metrics instead of doing the heavy statistics live.
+  #
+  # Why this matters: the z-score needs a rolling average and a rolling
+  # standard deviation over many hours/days of data. Computing that inside an
+  # alert on every evaluation would be slow and, for some shapes, not even
+  # valid PromQL. Pre-computing it here keeps the alerts fast and correct.
+  #
+  # Naming pattern: `cosmos:<thing>:<window>` (a colon-separated label so it is
+  # easy to recognise these derived series at a glance).
+  # ===========================================================================
   - name: oss-ultimate-agentic-ai.cosmos.recording.rules
     interval: 1m
     rules:
-      # Live latency per op type — input for every other rule. `max by` collapses duplicate per-region series.
+
+      # A1. CURRENT LATENCY, per operation type.
+      # The live latency for each operation (Read, Create, Replace, Upsert,
+      # Update), one series each. `max by (...)` collapses any duplicate
+      # underlying series (e.g. per region) into a single value per operation.
+      # This is the raw input every other recording rule builds on.
       - record: cosmos:op_latency:5m
         expr: |
           max by (resourceName, dimension_operationtype) (
@@ -24,7 +87,12 @@ groups:
               dimension_operationtype=~"Create|Read|Replace|Upsert|Update"
             }
           )
-      # Max across the four point ops (Update excluded — its 224ms baseline would always dominate `max`).
+
+      # A2. WORST POINT-OP LATENCY, one number for the whole account.
+      # Takes the maximum across the four fast "point" operations only. This
+      # single value is what the fixed 200/300 ms threshold alerts watch.
+      # Update is deliberately left out: at ~224 ms baseline it would always
+      # be the maximum and would defeat the purpose of a fixed threshold.
       - record: cosmos:point_op_latency:max_5m
         expr: |
           max by (resourceName) (
@@ -33,34 +101,84 @@ groups:
               dimension_operationtype=~"Create|Read|Replace|Upsert"
             }
           )
-      # 6h baseline (reacts quickly) + 7d baseline (stable long-term reference).
+
+      # A3. ROLLING BASELINES — what "normal" looks like, per operation.
+      # We keep two horizons so we can see both fast and slow changes:
+      #   6h  = recent normal, reacts quickly to new behaviour.
+      #   7d  = long-term normal, steady reference that a short spike can't
+      #         distort. `mean` is the average; `stddev` is how much the value
+      #         normally wobbles around that average (needed for the z-score).
       - record: cosmos:op_latency:mean_6h
         expr: avg_over_time(cosmos:op_latency:5m[6h])
+
       - record: cosmos:op_latency:stddev_6h
         expr: stddev_over_time(cosmos:op_latency:5m[6h])
+
       - record: cosmos:op_latency:mean_7d
         expr: avg_over_time(cosmos:op_latency:5m[7d])
+
       - record: cosmos:op_latency:stddev_7d
         expr: stddev_over_time(cosmos:op_latency:5m[7d])
-      # Z-score = (current - mean) / stddev.  clamp_min(stddev, 2) stops near-zero stddev (stable ops) from
-      # turning a tiny absolute blip into a huge z. Read at 0.66ms with stddev ~0.1 would otherwise be noisy.
+
+      # A4. Z-SCORES — "how unusual is right now, in units of normal wobble?"
+      # Formula: (current - average) / standard_deviation. A z-score of 3
+      # means the value is 3 standard deviations above its own average, which
+      # is statistically rare. Computed at both horizons.
+      #
+      # clamp_min(stddev, 2) is a safety floor: very stable operations (Read
+      # barely moves) have a near-zero standard deviation, and dividing by a
+      # tiny number turns a harmless 5 ms blip into a giant z-score. Forcing
+      # the divisor to be at least 2 ms stops those false anomalies.
       - record: cosmos:op_latency:zscore_6h
         expr: |
           (cosmos:op_latency:5m - cosmos:op_latency:mean_6h)
           / clamp_min(cosmos:op_latency:stddev_6h, 2)
+
       - record: cosmos:op_latency:zscore_7d
         expr: |
           (cosmos:op_latency:5m - cosmos:op_latency:mean_7d)
           / clamp_min(cosmos:op_latency:stddev_7d, 2)
-      # Week-over-week ratio — catches slow drift the rolling z-score absorbs into its own baseline.
+
+      # A5. WEEK-OVER-WEEK RATIO — catches slow, creeping drift.
+      # Compares this period's 6h average to the 6h average from exactly 7
+      # days ago. A ratio of 2 means latency has doubled versus the same time
+      # last week. This catches gradual degradation that a rolling z-score
+      # would miss, because slow drift quietly raises the baseline too.
+      # clamp_min(..., 1) avoids dividing by a near-zero week-ago value.
       - record: cosmos:op_latency:wow_ratio
         expr: |
           cosmos:op_latency:mean_6h
           / clamp_min(cosmos:op_latency:mean_6h offset 7d, 1)
-  # ===== LAYER B — Cosmos DB alerts =====
+
+
+  # ===========================================================================
+  # LAYER B   COSMOS DB ALERTS
+  #
+  # Six alerts that read the Layer A metrics. Two predictive (email-only),
+  # two fixed-threshold (ticket / page), and two safety nets (ticket).
+  # Each alert has:
+  #   expr            - the condition that must be true to fire.
+  #   for             - how long it must stay true before firing (filters
+  #                     out brief spikes).
+  #   keep_firing_for - how long it stays firing after the condition clears
+  #                     (stops one incident from flapping into many tickets).
+  # ===========================================================================
   - name: oss-ultimate-agentic-ai.cosmos.prod.rules
     rules:
-      # B1.  Predictive (email-only): op's 6h z-score > 3 AND latency > 20ms (operationally meaningful).
+
+      # =====================================================================
+      # B1.  LATENCY ANOMALY  (predictive, email-only)
+      #
+      # Fires when an operation is behaving abnormally FOR ITSELF: its 6-hour
+      # z-score is above 3 (a rare, >3-stddev deviation) AND the latency is
+      # actually meaningful (> 20 ms). The 20 ms floor is important — without
+      # it, a Read jumping from 0.6 ms to 8 ms is "statistically extreme" yet
+      # operationally meaningless, and would page no one usefully.
+      #
+      # This is an EARLY WARNING. It often fires before any fixed threshold,
+      # giving the team a head start. Because it is a heads-up and not a
+      # confirmed problem, it emails only and never opens a ticket.
+      # =====================================================================
       - alert: CosmosDB_Latency_ANOMALY
         expr: |
           cosmos:op_latency:zscore_6h > 3
@@ -93,7 +211,20 @@ groups:
             (3) recent deploys, query-shape changes, indexing-policy edits.
             If the Warning or Critical tier follows within 30 minutes, the
             prediction has been confirmed.
-      # B2.  Predictive (email-only): WoW ratio > 2x AND mean_6h > 50ms. Catches slow drift over days.
+
+      # =====================================================================
+      # B2.  WEEK-OVER-WEEK LATENCY CREEP  (predictive, email-only)
+      #
+      # Catches SLOW degradation that the z-score can miss. If latency rises
+      # gradually over days, the rolling 6-hour baseline quietly rises with
+      # it, so the z-score never looks unusual. Comparing against the same
+      # time exactly one week ago sidesteps that: a ratio above 2 means
+      # latency has more than doubled versus last week.
+      #
+      # The `mean_6h > 50` guard stops it firing on trivially small numbers
+      # (doubling from 1 ms to 2 ms is still 2x but means nothing). Like B1,
+      # this is a heads-up, so it emails only.
+      # =====================================================================
       - alert: CosmosDB_Latency_WoW_ANOMALY
         expr: |
           cosmos:op_latency:wow_ratio > 2
@@ -121,7 +252,20 @@ groups:
             than the same hour last week (smoothed baseline). Slow drift in
             progress; review capacity, data growth (Storage tab), and recent
             code / index changes. Not urgent but worth scheduling a look.
-      # B3.  Warning threshold (SNOW ticket): point-op max in 200-300ms band. `unless`> 300 prevents overlap with B4.
+
+      # =====================================================================
+      # B3.  POINT-OP LATENCY ELEVATED  (warning threshold, SNOW ticket)
+      #
+      # The first hard line. Fires when the worst point-op latency sits in
+      # the 200–300 ms band for 15 minutes. 200 ms is comfortably above the
+      # account's normal busy-hour peak, so healthy traffic does not trip it,
+      # but it is well short of an outage.
+      #
+      # The `unless (... > 300)` clause means: only fire in the WARNING band.
+      # Once latency passes 300 ms, B4 (critical) takes over and this one
+      # steps aside, so a single problem never produces two overlapping
+      # tickets. Opens a ServiceNow ticket but does not page.
+      # =====================================================================
       - alert: CosmosDB_PointOpLatency_Warning_STD_THRESH
         expr: |
           (cosmos:point_op_latency:max_5m > 200)
@@ -141,6 +285,7 @@ groups:
           email_subject: 'WARNING: Cosmos DB point-op latency elevated - {{$labels.resourceName}}'
           uc_environment: prod
           correlation_rule: 'alert_name,snow_short_description'
+          # --- SNOW ticket routing (Warning -> ServiceNow incident, no page) ---
           conveyor_route: universal_connector
           actionability_type: incident,email
           alert_actionable: 'true'
@@ -168,7 +313,16 @@ groups:
             the Z-score dashboard for which op is contributing, RU/s
             consumption, and any recent deploys. No paging action unless the
             Critical alert also fires.
-      # B4.  Critical threshold (SNOW ticket + P1 page): point-op max > 300ms for 10m. User impact likely.
+
+      # =====================================================================
+      # B4.  POINT-OP LATENCY CRITICAL  (critical threshold, SNOW + PAGE)
+      #
+      # The serious line. Fires when the worst point-op latency stays above
+      # 300 ms (roughly double the normal busy-hour peak) for 10 minutes —
+      # at this point users are likely feeling it. The window is a little
+      # shorter than the warning's because, once this high, we want to know
+      # quickly. Opens a P1 ServiceNow incident AND pages the on-call.
+      # =====================================================================
       - alert: CosmosDB_PointOpLatency_Critical_STD_THRESH
         expr: cosmos:point_op_latency:max_5m > 300
         for: 10m
@@ -185,6 +339,7 @@ groups:
           email_subject: 'CRITICAL: Cosmos DB point-op latency - {{$labels.resourceName}}'
           uc_environment: prod
           correlation_rule: 'alert_name,snow_short_description'
+          # --- SNOW ticket routing (Critical -> ServiceNow incident + PAGE, P1) ---
           conveyor_route: universal_connector
           actionability_type: incident,email
           alert_actionable: 'true'
@@ -213,7 +368,20 @@ groups:
             split by PartitionKeyRangeId for a hot partition; (3) confirm no
             regional failover/maintenance; (4) review recent deploys, query
             patterns and indexing-policy changes.
-      # B5.  Heartbeat safety net (SNOW ticket): the aggregate metric is absent for 15m -> alerts are blind.
+
+      # =====================================================================
+      # B5.  LATENCY METRIC MISSING  (heartbeat safety net, SNOW ticket)
+      #
+      # Every alert above depends on the Layer A recording rules producing
+      # values. If the metric stops flowing (a broken scrape, a crashed
+      # exporter, a renamed label), those alerts would go silently blind —
+      # the most dangerous failure in monitoring, because everything looks
+      # "green" while nothing is actually being watched.
+      #
+      # `absent(...)` returns 1 exactly when the aggregate metric has no data.
+      # If that persists for 15 minutes, this fires so a human can fix the
+      # pipeline. It is the alarm that watches the alarms.
+      # =====================================================================
       - alert: CosmosDB_LatencyMetricMissing_STD_THRESH
         expr: absent(cosmos:point_op_latency:max_5m)
         for: 15m
@@ -229,6 +397,7 @@ groups:
           email_subject: 'Cosmos DB latency metric missing - alerts are blind'
           uc_environment: prod
           correlation_rule: 'alert_name,snow_short_description'
+          # --- SNOW ticket routing (Warning -> ServiceNow incident, safety net) ---
           conveyor_route: universal_connector
           actionability_type: incident,email
           alert_actionable: 'true'
@@ -254,7 +423,16 @@ groups:
             has been absent for 15 minutes. The Z-score and threshold alerts
             for ossultimateprod13db-cosmos are now blind. Check the Spyglass
             scrape, the Azure metrics exporter, and the recording rules.
-      # B6.  Service-availability dip (SNOW ticket): Azure-reported availability avg < 99.9% over 1h.
+
+      # =====================================================================
+      # B6.  SERVICE AVAILABILITY DIP  (safety net, SNOW ticket)
+      #
+      # Latency tells us how SLOW Cosmos is; availability tells us how OFTEN
+      # it is actually answering. This watches Azure's own service-
+      # availability percentage, averaged over the last hour, and fires if it
+      # slips below 99.9%. That is a direct signal of a Cosmos-side problem
+      # (throttling, regional issue, outage) rather than a latency symptom.
+      # =====================================================================
       - alert: CosmosDB_ServiceAvailability_STD_THRESH
         expr: |
           avg_over_time(
@@ -275,6 +453,7 @@ groups:
           email_subject: 'Cosmos DB service availability dip - {{$labels.resourceName}}'
           uc_environment: prod
           correlation_rule: 'alert_name,snow_short_description'
+          # --- SNOW ticket routing (Warning -> ServiceNow incident) ---
           conveyor_route: universal_connector
           actionability_type: incident,email
           alert_actionable: 'true'
@@ -299,27 +478,40 @@ groups:
             Cosmos DB service availability for {{$labels.resourceName}}
             averaged below 99.9% over the past hour. Compare against the
             Azure Service Health blade for any reported incidents.
-  # ===== LAYER A2 — CPU recording rules (same z-score pattern as Layer A, for App Service + AKS nodes) =====
+
+  # ===========================================================================
+  # LAYER A2   CPU RECORDING RULES
+  #
+  # Pre-computed CPU metrics for the anomaly + threshold alerts below. Covers
+  # two signals: App Service CPU-time and AKS node CPU percentage. Each signal
+  # gets a current value, a 6-hour rolling mean, a 6-hour rolling standard
+  # deviation, and a 6-hour z-score.
+  #
+  # Metric naming: `<area>:<thing>:<window>`.
+  #   appsvc:cputime:*  -> App Service CPU-time gauge series.
+  #   node:cpu_pct:*    -> AKS node CPU percentage series.
+  # ===========================================================================
   - name: oss-ultimate-agentic-ai.cpu.recording.rules
     interval: 1m
     rules:
-      # App Service CPU — preserves the original `cputime_seconds_total` semantic (no rate()) so the C2 threshold
-      # behaviour is unchanged. clamp_min(stddev, 0.05) is the noise floor for this signal's scale.
+      # App Service CPU-time, current value per resource.
       - record: appsvc:cputime:5m
         expr: |
           max by (resourceName) (
             azure_web_sites_cputime_seconds_total{resourceName="ossultimateprod13wa"}
           )
+      # App Service CPU-time, 6-hour rolling baseline and spread.
       - record: appsvc:cputime:mean_6h
         expr: avg_over_time(appsvc:cputime:5m[6h])
       - record: appsvc:cputime:stddev_6h
         expr: stddev_over_time(appsvc:cputime:5m[6h])
+      # App Service CPU-time z-score vs its own 6-hour baseline.
       - record: appsvc:cputime:zscore_6h
         expr: |
           (appsvc:cputime:5m - appsvc:cputime:mean_6h)
           / clamp_min(appsvc:cputime:stddev_6h, 0.05)
-      # AKS node CPU % — `100 - rate(idle)*100`. Uses 5m rate window (smoother than the original 2m). C6 reads this.
-      # clamp_min(stddev, 3) is the noise floor for percentage signals.
+
+      # AKS node CPU percentage (0-100), current value per node.
       - record: node:cpu_pct:5m
         expr: |
           100 - (
@@ -327,18 +519,25 @@ groups:
               rate(node_cpu_seconds_total{cluster=~"aks-aif-mt-prod-12-ecc6", mode="idle"}[5m])
             ) * 100
           )
+      # AKS node CPU percentage, 6-hour rolling baseline and spread.
       - record: node:cpu_pct:mean_6h
         expr: avg_over_time(node:cpu_pct:5m[6h])
       - record: node:cpu_pct:stddev_6h
         expr: stddev_over_time(node:cpu_pct:5m[6h])
+      # AKS node CPU percentage z-score vs its own 6-hour baseline.
       - record: node:cpu_pct:zscore_6h
         expr: |
           (node:cpu_pct:5m - node:cpu_pct:mean_6h)
           / clamp_min(node:cpu_pct:stddev_6h, 3)
-  # ===== LAYER C — Platform alerts (CPU now anomaly + threshold; Redis/Pod/Databricks preserved verbatim) =====
+
   - name: oss-ultimate-agentic-ai.prod.rules
     rules:
-      # C1.  App Service CPU predictive (email-only): z>3 AND value > 0.3 (skip trivially small noise).
+      # =====================================================================
+      # App Service CPU ANOMALY  (predictive, email-only)
+      # Fires when CPU is statistically unusual for itself (6h z-score > 3)
+      # AND meaningfully loaded (> 0.3, to skip trivial near-idle noise).
+      # Early warning only -> emails, never opens a ticket.
+      # =====================================================================
       - alert: AppService_CPU_ANOMALY
         expr: |
           appsvc:cputime:zscore_6h > 3
@@ -361,13 +560,20 @@ groups:
         annotations:
           summary: 'App Service {{$labels.resourceName}} CPU is statistically anomalous vs its 6h baseline'
           message: >-
-            PREDICTIVE: App Service {{$labels.resourceName}} CPU is {{$value | printf "%.1f"}}σ above its 6h baseline
-            for 15m. Early warning, not yet a threshold breach. Check recent deploys, traffic spikes, background
-            jobs, scaled-down instances, or noisy neighbours.
-      # C2.  App Service CPU threshold (SNOW ticket): cputime > 0.7 for 5m. Preserves original semantic; adds routing.
+            PREDICTIVE: App Service {{$labels.resourceName}} CPU is
+            {{$value | printf "%.1f"}}σ above its 6-hour rolling baseline for
+            15 minutes. This is an early warning, not yet a threshold breach.
+            Check recent deploys, traffic spikes, background jobs, scaled-down
+            instances, or noisy neighbours. If the threshold alert follows, the
+            prediction has been confirmed.
+
+      # =====================================================================
+      # App Service CPU THRESHOLD  (warning, email-only)
+      # Hard line: raw CPU-time gauge > 0.7 sustained for 15 minutes.
+      # =====================================================================
       - alert: AppService_CPU_Warning_STD_THRESH
         expr: appsvc:cputime:5m > 0.7
-        for: 5m
+        for: 15m
         keep_firing_for: 10m
         labels:
           severity: "Warning"
@@ -381,28 +587,15 @@ groups:
           email_subject: 'WARNING: App Service high CPU utilization - {{$labels.resourceName}}'
           uc_environment: prod
           correlation_rule: 'alert_name,snow_short_description'
-          conveyor_route: universal_connector
-          actionability_type: incident,email
-          alert_actionable: 'true'
-          snow_short_description: 'AppService_CPU_Warning_STD_THRESH - {{$labels.resourceName}}'
-          snow_description: 'App Service CPU on {{$labels.resourceName}} sustained above 0.7 for 5m.'
-          snow_configuration_item: One Supply Services - Ultimate Agentic AI Platform
-          snow_assignment_group: DevOps_AdvAnalytApps
-          snow_business_service: D&A AI ENGINEERING SERVICES
-          snow_service_offering: D&A AI Eng
-          snow_category: Business Application & Databases
-          snow_subcategory: Business Applications
-          snow_component: Alerts
-          snow_contact_type: Auto Ticket
-          snow_location: ALL LOCATIONS
-          snow_incident_type: 'Operations: Application Availability'
-          snow_is_cbp_impacted: 'No'
-          snow_impact: '3'
-          snow_urgency: '3'
         annotations:
-          summary: 'App Service CPU above 0.7 for 5 minutes'
-          message: 'The CPU utilization for App Service instance {{$labels.resourceName}} has been higher than 0.7 for 5 minutes. Investigate workload, recent deploys, and resource sizing. If the C1 anomaly alert preceded this, the prediction is confirmed.'
-      # C3.  Redis heartbeat (preserved verbatim).
+          summary: 'App Service CPU above 0.7 for 15 minutes'
+          message: >-
+            The CPU utilization for App Service instance
+            {{$labels.resourceName}} has been higher than 0.7 for 15 minutes.
+            Investigate workload, recent deploys, and resource sizing. If the
+            AppService_CPU_ANOMALY alert preceded this, the prediction is
+            confirmed.
+
       - alert: Redis Heartbeat
         expr: absent(ami_metric_present{resourceType="microsoft.cache/redis", resourceName="ossultimateprod13redis"})
         for: 1m
@@ -418,13 +611,19 @@ groups:
           correlation_rule: 'alert_name,snow_short_description'
         annotations:
           message: 'The heartbeat for Azure Redis Cache instance {{$labels.resourceName}} is not equal to 1. Investigate immediately.'
-      # C5.  AKS node CPU predictive (email-only): z>3 AND value > 50% (only fires when node is genuinely loaded).
+
+      # =====================================================================
+      # AKS Node CPU ANOMALY  (predictive, email-only)
+      # Fires when a node's CPU % is statistically unusual for itself (6h
+      # z-score > 3) AND the node is genuinely loaded (> 50%), so it does not
+      # fire on noise around an idle baseline. Early warning -> email only.
+      # =====================================================================
       - alert: AKSNode_CPU_ANOMALY
         expr: |
           node:cpu_pct:zscore_6h > 3
           and
           node:cpu_pct:5m > 50
-        for: 10m
+        for: 15m
         keep_firing_for: 15m
         labels:
           severity: "Low"
@@ -441,13 +640,20 @@ groups:
         annotations:
           summary: 'AKS node {{$labels.instance}} CPU is statistically anomalous vs its 6h baseline'
           message: >-
-            PREDICTIVE: AKS node {{$labels.instance}} ({{$labels.cluster}}) CPU is {{$value | printf "%.1f"}}σ above
-            its 6h baseline for 10m. Early warning — check scheduling imbalance, noisy pod, recent deploy, or a
-            node that needs to be cordoned.
-      # C6.  AKS node CPU threshold (SNOW ticket): cpu_pct > 85 for 5m. Replaces the old "Cluster High CPU" alert.
+            PREDICTIVE: AKS node {{$labels.instance}} ({{$labels.cluster}}) CPU
+            is {{$value | printf "%.1f"}}σ above its 6-hour rolling baseline for
+            15 minutes. Early warning — check scheduling imbalance, a noisy pod,
+            a recent deploy, or a node that needs to be cordoned. If the
+            threshold alert follows, the prediction has been confirmed.
+
+      # =====================================================================
+      # AKS Node CPU THRESHOLD  (warning, email-only)
+      # Hard line: node CPU > 85% sustained for 15 minutes (per policy).
+      # Replaces the previous "Cluster High CPU Utilization" alert.
+      # =====================================================================
       - alert: AKSNode_CPU_Warning_STD_THRESH
         expr: node:cpu_pct:5m > 85
-        for: 5m
+        for: 15m
         keep_firing_for: 10m
         labels:
           severity: "Warning"
@@ -461,28 +667,15 @@ groups:
           email_subject: 'WARNING: AKS node high CPU usage - {{$labels.instance}} ({{$labels.cluster}})'
           uc_environment: prod
           correlation_rule: 'alert_name,snow_short_description'
-          conveyor_route: universal_connector
-          actionability_type: incident,email
-          alert_actionable: 'true'
-          snow_short_description: 'AKSNode_CPU_Warning_STD_THRESH - {{$labels.instance}}'
-          snow_description: 'AKS node {{$labels.instance}} in cluster {{$labels.cluster}} sustained CPU > 85% for 5m.'
-          snow_configuration_item: One Supply Services - Ultimate Agentic AI Platform
-          snow_assignment_group: DevOps_AdvAnalytApps
-          snow_business_service: D&A AI ENGINEERING SERVICES
-          snow_service_offering: D&A AI Eng
-          snow_category: Business Application & Databases
-          snow_subcategory: Business Applications
-          snow_component: Alerts
-          snow_contact_type: Auto Ticket
-          snow_location: ALL LOCATIONS
-          snow_incident_type: 'Operations: Application Availability'
-          snow_is_cbp_impacted: 'No'
-          snow_impact: '3'
-          snow_urgency: '3'
         annotations:
-          summary: 'AKS node CPU above 85% for 5 minutes'
-          message: 'Node {{$labels.instance}} in cluster {{$labels.cluster}} has sustained CPU above 85% for 5 minutes. Investigate workload distribution, recent scheduling changes, or whether the node needs to be cordoned. If the C5 anomaly alert preceded this, the prediction is confirmed.'
-      # C7.  Pod crash looping (preserved verbatim).
+          summary: 'AKS node CPU above 85% for 15 minutes'
+          message: >-
+            Node {{$labels.instance}} in cluster {{$labels.cluster}} has
+            sustained CPU above 85% for 15 minutes. Investigate workload
+            distribution, recent scheduling changes, or whether the node needs
+            to be cordoned. If the AKSNode_CPU_ANOMALY alert preceded this, the
+            prediction is confirmed.
+
       - alert: Pod Crash Looping
         expr: increase(kube_pod_container_status_restarts_total{cluster=~"aks-aif-mt-prod-12-ecc6"}[3m]) > 3
         for: 3m
@@ -498,7 +691,7 @@ groups:
           correlation_rule: 'alert_name,snow_short_description'
         annotations:
           message: 'Pod {{$labels.pod}} is crash looping.'
-      # C8.  Databricks workspace down (preserved verbatim).
+
       - alert: Databricks Workspace Down
         expr: databricks_workspace_up{workspace=~"adbuvamain-prd"} != 1
         for: 10m
