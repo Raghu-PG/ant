@@ -1,0 +1,587 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "purple",
+        "name": "Deploys / Changes",
+        "titleFormat": "deploy",
+        "type": "tags",
+        "tags": [
+          "deploy"
+        ]
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L2"
+      ],
+      "targetBlank": false,
+      "title": "L2 dashboards",
+      "tooltip": "",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "panels": [],
+      "title": "1. SLO & Error Budget",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "id": 3,
+      "type": "text",
+      "title": "1. SLO & Error Budget \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Are we meeting our SLO, how much error budget is left, and how fast are we burning it?\n\n**Method:** SLO / error budget\n\n**Recommended viz:** Stat/gauge for compliance; bar for budget; timeseries for burn rate\n\n**Example panels (flex):** SLO compliance, error budget remaining, multi-window burn rate (14.4 / 6 / 1)\n\n**Required signals/fields:** good & valid event counts, SLO target & window\n\n**Drill-down:** \u2192 L2\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 4,
+      "options": {},
+      "title": "[example] SLO Compliance",
+      "type": "gauge",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 5,
+      "options": {},
+      "title": "[example] Error Budget Left",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 1
+      },
+      "id": 6,
+      "options": {},
+      "title": "[example] Burn Rate (multi-window)",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 7,
+      "panels": [],
+      "title": "2. Golden-Signal Topline",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 18
+      },
+      "id": 8,
+      "type": "text",
+      "title": "2. Golden-Signal Topline \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Aggregate Traffic, Errors, Latency, Saturation right now.\n\n**Method:** Four Golden Signals\n\n**Recommended viz:** Stats for the toplines; timeseries for trend\n\n**Example panels (flex):** Requests/sec, overall error rate %, p95/p99 latency, peak saturation\n\n**Required signals/fields:** rate, errors, duration percentiles, saturation\n\n**Drill-down:** \u2192 L2\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 8,
+        "y": 18
+      },
+      "id": 9,
+      "options": {},
+      "title": "[example] Traffic (req/s)",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 12,
+        "y": 18
+      },
+      "id": 10,
+      "options": {},
+      "title": "[example] Error Rate %",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 16,
+        "y": 18
+      },
+      "id": 11,
+      "options": {},
+      "title": "[example] p95 Latency",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 20,
+        "y": 18
+      },
+      "id": 12,
+      "options": {},
+      "title": "[example] Saturation",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 13,
+      "panels": [],
+      "title": "3. Critical Dependencies & Capacity",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 35
+      },
+      "id": 14,
+      "type": "text",
+      "title": "3. Critical Dependencies & Capacity \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Are key upstreams/downstreams up, and do we have headroom?\n\n**Method:** USE (capacity)\n\n**Recommended viz:** Status grid; gauges with limit lines\n\n**Example panels (flex):** Dependency up/down matrix, headroom gauges (CPU/mem/queue vs limit), regional status\n\n**Required signals/fields:** dependency health, utilization vs limit\n\n**Drill-down:** \u2192 L2 / L3\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 35
+      },
+      "id": 15,
+      "options": {},
+      "title": "[example] Dependency Health",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 35
+      },
+      "id": 16,
+      "options": {},
+      "title": "[example] Capacity Headroom",
+      "type": "gauge",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "id": 17,
+      "panels": [],
+      "title": "4. Active Incidents & Changes",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 52
+      },
+      "id": 18,
+      "type": "text",
+      "title": "4. Active Incidents & Changes \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** What is already firing and what just changed.\n\n**Method:** \u2014\n\n**Recommended viz:** Alert list; annotations list\n\n**Example panels (flex):** Firing alerts, recent deploys/version, change log\n\n**Required signals/fields:** alert state, deploy annotations\n\n**Drill-down:** \u2192 alert / runbook\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 52
+      },
+      "id": 19,
+      "options": {},
+      "title": "[example] Firing Alerts",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 52
+      },
+      "id": 20,
+      "options": {},
+      "title": "[example] Recent Deploys",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "L1",
+    "TEMPLATE"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "environment",
+        "name": "environment",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "region",
+        "name": "region",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "service",
+        "name": "service",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "instance",
+        "name": "instance",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "TEMPLATE - <Service> L1 (Overview)",
+  "uid": "",
+  "version": 1
+}

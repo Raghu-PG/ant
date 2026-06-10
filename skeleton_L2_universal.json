@@ -1,0 +1,488 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "purple",
+        "name": "Deploys / Changes",
+        "titleFormat": "deploy",
+        "type": "tags",
+        "tags": [
+          "deploy"
+        ]
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L1"
+      ],
+      "targetBlank": false,
+      "title": "L1 dashboards",
+      "tooltip": "",
+      "type": "dashboards"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L3"
+      ],
+      "targetBlank": false,
+      "title": "L3 dashboards",
+      "tooltip": "",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 21,
+      "panels": [],
+      "title": "1. Request Health (per service/route)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "id": 22,
+      "type": "text",
+      "title": "1. Request Health (per service/route) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Which service/endpoint is failing or slow.\n\n**Method:** RED\n\n**Recommended viz:** Timeseries per route; top-N table\n\n**Example panels (flex):** Rate, error rate, p95/p99 duration per service & per route; top failing endpoints\n\n**Required signals/fields:** request rate, errors, duration, route label\n\n**Drill-down:** \u2192 L3 service\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 1
+      },
+      "id": 23,
+      "options": {},
+      "title": "[example] Rate & Errors by Route",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 1
+      },
+      "id": 24,
+      "options": {},
+      "title": "[example] p95 Duration by Route",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 25,
+      "panels": [],
+      "title": "2. Resource Health (per resource)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 18
+      },
+      "id": 26,
+      "type": "text",
+      "title": "2. Resource Health (per resource) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Which resource is constrained.\n\n**Method:** USE\n\n**Recommended viz:** Timeseries with limit lines; gauges\n\n**Example panels (flex):** CPU/mem/disk/net utilization + saturation (vs limits), pool/queue depth, restarts/OOM\n\n**Required signals/fields:** utilization, saturation, limits, restarts\n\n**Drill-down:** \u2192 L3 resource/instance\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 18
+      },
+      "id": 27,
+      "options": {},
+      "title": "[example] Utilization vs Limit",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 18
+      },
+      "id": 28,
+      "options": {},
+      "title": "[example] Queue / Pool Saturation",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 29,
+      "panels": [],
+      "title": "3. Dependency & Integration Health",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 35
+      },
+      "id": 30,
+      "type": "text",
+      "title": "3. Dependency & Integration Health \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Are downstreams/externals the cause.\n\n**Method:** RED (per dependency)\n\n**Recommended viz:** Per-dependency timeseries; status grid\n\n**Example panels (flex):** Per-dependency rate/errors/latency, timeouts, retries, circuit-breaker state, DB/queue health\n\n**Required signals/fields:** dependency name, rate/errors/latency, breaker state\n\n**Drill-down:** \u2192 dependency L3\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 35
+      },
+      "id": 31,
+      "options": {},
+      "title": "[example] Dependency RED",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 35
+      },
+      "id": 32,
+      "options": {},
+      "title": "[example] Timeouts / Retries / Breaker",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "id": 33,
+      "panels": [],
+      "title": "4. Change & Deploy Correlation",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 52
+      },
+      "id": 34,
+      "type": "text",
+      "title": "4. Change & Deploy Correlation \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Did a change cause this.\n\n**Method:** \u2014\n\n**Recommended viz:** Timeseries with deploy annotations overlaid\n\n**Example panels (flex):** Deploy/version timeline, config/flag changes overlaid on error/latency\n\n**Required signals/fields:** deploy annotations, version, error/latency\n\n**Drill-down:** \u2192 CI/CD / change record\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 52
+      },
+      "id": 35,
+      "options": {},
+      "title": "[example] Errors with Deploy Markers",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "L2",
+    "TEMPLATE"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "environment",
+        "name": "environment",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "region",
+        "name": "region",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "service",
+        "name": "service",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "instance",
+        "name": "instance",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "TEMPLATE - <Service> L2 (Triage)",
+  "uid": "",
+  "version": 1
+}

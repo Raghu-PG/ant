@@ -1,0 +1,926 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "purple",
+        "name": "Deploys / Changes",
+        "titleFormat": "deploy",
+        "type": "tags",
+        "tags": [
+          "deploy"
+        ]
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L2"
+      ],
+      "targetBlank": false,
+      "title": "L2 dashboards",
+      "tooltip": "",
+      "type": "dashboards"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L3"
+      ],
+      "targetBlank": false,
+      "title": "Related L3",
+      "tooltip": "",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 36,
+      "panels": [],
+      "title": "1. Overview / Golden Signals (scoped)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "id": 37,
+      "type": "text",
+      "title": "1. Overview / Golden Signals (scoped) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** One-glance health of THIS component.\n\n**Method:** Four Golden Signals\n\n**Recommended viz:** Stats\n\n**Example panels (flex):** Traffic, error rate, p95/p99 latency, saturation (scoped)\n\n**Required signals/fields:** rate, errors, duration, saturation\n\n**Drill-down:** top of dashboard\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 38,
+      "options": {},
+      "title": "[example] Traffic",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 39,
+      "options": {},
+      "title": "[example] Error Rate",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 40,
+      "options": {},
+      "title": "[example] p95 Latency",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 41,
+      "options": {},
+      "title": "[example] Saturation",
+      "type": "stat",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 42,
+      "panels": [],
+      "title": "2. Traffic & Demand",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "id": 43,
+      "type": "text",
+      "title": "2. Traffic & Demand \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** How much, from where, of what kind.\n\n**Method:** RED (Rate)\n\n**Recommended viz:** Timeseries + bar\n\n**Example panels (flex):** Volume over time; by endpoint/method/client/tenant/region; request size\n\n**Required signals/fields:** request id/route/client/region\n\n**Drill-down:** \u2014\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "id": 44,
+      "options": {},
+      "title": "[example] Volume Over Time",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "id": 45,
+      "options": {},
+      "title": "[example] By Endpoint/Client",
+      "type": "bargauge",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 46,
+      "panels": [],
+      "title": "3. Errors (taxonomy)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 31
+      },
+      "id": 47,
+      "type": "text",
+      "title": "3. Errors (taxonomy) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Exactly what is failing and why (classify by true signal, not log level).\n\n**Method:** RED (Errors)\n\n**Recommended viz:** Timeseries (%) + tables\n\n**Example panels (flex):** Error rate over time; by type/code/cause; TRUE failures vs ancillary (separate); top messages\n\n**Required signals/fields:** status/result code, error type, correlation id\n\n**Drill-down:** pair true vs ancillary \u2014 keep separate\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 31
+      },
+      "id": 48,
+      "options": {},
+      "title": "[example] Error Rate Over Time",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 31
+      },
+      "id": 49,
+      "options": {},
+      "title": "[example] Errors by Type/Code",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 50,
+      "panels": [],
+      "title": "4. Latency (distribution)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 48
+      },
+      "id": 51,
+      "type": "text",
+      "title": "4. Latency (distribution) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Where the time goes and the tail shape.\n\n**Method:** RED (Duration)\n\n**Recommended viz:** Heatmap + percentile timeseries\n\n**Example panels (flex):** Percentiles over time + latency heatmap; by endpoint/dependency; slowest operations\n\n**Required signals/fields:** duration samples (note unit), endpoint/dependency\n\n**Drill-down:** drop if unavailable; never fake an average\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 48
+      },
+      "id": 52,
+      "options": {},
+      "title": "[example] Latency Heatmap",
+      "type": "heatmap",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 48
+      },
+      "id": 53,
+      "options": {},
+      "title": "[example] Percentiles Over Time",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "id": 54,
+      "panels": [],
+      "title": "5. Saturation & Resources",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 65
+      },
+      "id": 55,
+      "type": "text",
+      "title": "5. Saturation & Resources \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Is it resource-bound.\n\n**Method:** USE\n\n**Recommended viz:** Timeseries vs limit; gauges\n\n**Example panels (flex):** Queue depth, pool exhaustion, CPU/mem/GC, I/O wait, backlog/lag \u2014 each vs limit\n\n**Required signals/fields:** resource utilization/saturation + limits\n\n**Drill-down:** \u2192 instance view\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 65
+      },
+      "id": 56,
+      "options": {},
+      "title": "[example] Queue / Backlog vs Limit",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 65
+      },
+      "id": 57,
+      "options": {},
+      "title": "[example] CPU / Mem / GC",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 81
+      },
+      "id": 58,
+      "panels": [],
+      "title": "6. Dependencies (per-dependency RED)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 82
+      },
+      "id": 59,
+      "type": "text",
+      "title": "6. Dependencies (per-dependency RED) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Which downstream is dragging us.\n\n**Method:** RED\n\n**Recommended viz:** Per-dependency timeseries + table\n\n**Example panels (flex):** Per-dependency rate/errors/latency, retry/timeout/breaker, connection pool\n\n**Required signals/fields:** dependency name, rate/errors/latency\n\n**Drill-down:** \u2192 dependency L3\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 82
+      },
+      "id": 60,
+      "options": {},
+      "title": "[example] Per-Dependency RED",
+      "type": "timeseries",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 82
+      },
+      "id": 61,
+      "options": {},
+      "title": "[example] Retries / Timeouts",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 98
+      },
+      "id": 62,
+      "panels": [],
+      "title": "7. Breakdown (by dimension)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 99
+      },
+      "id": 63,
+      "type": "text",
+      "title": "7. Breakdown (by dimension) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Which slice is affected.\n\n**Method:** All\n\n**Recommended viz:** Sorted tables / bar gauges\n\n**Example panels (flex):** By endpoint/version/region/tenant/instance \u2014 success-rate & latency\n\n**Required signals/fields:** dimension labels, success/fail, latency\n\n**Drill-down:** \u2014\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 99
+      },
+      "id": 64,
+      "options": {},
+      "title": "[example] Success Rate by Dimension",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 99
+      },
+      "id": 65,
+      "options": {},
+      "title": "[example] Latency by Dimension",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 117
+      },
+      "id": 66,
+      "panels": [],
+      "title": "8. Troubleshooting (logs / traces)",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 118
+      },
+      "id": 67,
+      "type": "text",
+      "title": "8. Troubleshooting (logs / traces) \u2014 what goes here",
+      "options": {
+        "mode": "markdown",
+        "content": "**Intent:** Get to the actual failing unit of work.\n\n**Method:** Telemetry pillars\n\n**Recommended viz:** Logs panel, trace view, table with correlation IDs\n\n**Example panels (flex):** Exemplars/trace links, recent failures with correlation IDs + status, filtered log explorer\n\n**Required signals/fields:** correlation/trace id, status, timestamp, message\n\n**Drill-down:** \u2192 trace / log backend\n\n_Replace the example tiles with real panels. Keep the stack even if only one panel fits._"
+      },
+      "transparent": false,
+      "pluginVersion": "12.2.0"
+    },
+    {
+      "datasource": {
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 8,
+        "y": 118
+      },
+      "id": 68,
+      "options": {},
+      "title": "[example] Recent Failures (with trace/correlation id)",
+      "type": "table",
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "L3",
+    "TEMPLATE"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "environment",
+        "name": "environment",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "region",
+        "name": "region",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "service",
+        "name": "service",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "REPLACE_ME",
+          "value": "REPLACE_ME"
+        },
+        "includeAll": false,
+        "label": "instance",
+        "name": "instance",
+        "options": [
+          {
+            "selected": true,
+            "text": "REPLACE_ME",
+            "value": "REPLACE_ME"
+          }
+        ],
+        "query": "REPLACE_ME",
+        "type": "custom"
+      },
+      {
+        "allValue": "*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "route",
+        "name": "route",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "*",
+        "type": "custom"
+      },
+      {
+        "allValue": "*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "label": "version",
+        "name": "version",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "*",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "TEMPLATE - <Component> L3 (Deep Diagnostics)",
+  "uid": "",
+  "version": 1
+}
