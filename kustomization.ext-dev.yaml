@@ -1,0 +1,45 @@
+# =============================================================================
+# kustomization.yaml  ->  goes in:
+#   <repo>/dev/prometheus-alerts/genai-queue-storage/ext-dev/kustomization.yaml
+#   (rename this file to exactly `kustomization.yaml` in that folder)
+#
+# !! TEMPLATE - DIFF AGAINST AN EXISTING ONE BEFORE COMMIT !!
+#   I do not have the literal kustomization.yaml from your repo, so the field
+#   names below are the standard Spyglass/kube-prometheus pattern. Copy an
+#   existing app's kustomization.yaml (e.g. oss-ultimate-agentic-ai) and match:
+#     - the `configMapGenerator` selector labels Prometheus uses to discover rules
+#     - the exact `replica` annotation KEY
+#     - the target namespace
+#
+# CONFIRMED from your Grafana data:
+#   Prometheus replica for ext-dev = prometheus-sre-aks-aife-mt-dev-ca05-0
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: genai-queue-storage-rules
+    # namespace: <monitoring-namespace>      # TODO: match existing kustomization
+    files:
+      - genai-queue-storage.ext-dev.rules.yaml
+    options:
+      labels:
+        # TODO: match the label selector your Prometheus uses to pick up rule
+        # ConfigMaps (copy from an existing app's kustomization.yaml).
+        prometheus_rule: "true"
+      annotations:
+        # Targets the Prometheus replica that scrapes ext-dev (confirmed value).
+        replica: prometheus-sre-aks-aife-mt-dev-ca05-0
+# -----------------------------------------------------------------------------
+# Then register this folder in the parent dev/prometheus-alerts/kustomization.yaml
+# resources: list, the same way existing apps are registered.
+#
+# PROD (when the metric ships to prod): create
+#   prod/prometheus-alerts/genai-queue-storage/prod/kustomization.yaml
+# identical to this, but with the PROD Prometheus replica annotation (find it via
+#   `queue_approximate_message_count{cluster="aks-aif-mt-prod-5f94"}` -> replica
+#   label) and the same rules file copied as genai-queue-storage.prod.rules.yaml.
+# -----------------------------------------------------------------------------
