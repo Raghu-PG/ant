@@ -1,0 +1,424 @@
+# =============================================================================
+# GenAI Platform - Queue Storage Consumption: ALERTING RULES (Thanos Ruler)
+# Jira: GENAI-2580
+# Dashboard UID: genai-queue-storage-consumption
+# Format: Prometheus rule groups, evaluated by Thanos Ruler against Thanos Query.
+#
+# DESIGN NOTES (read before editing):
+#   * Thanos Query gives a GLOBAL view across all clusters/namespaces. Every
+#     aggregation therefore groups by (cluster, namespace, release, queue_name)
+#     so that series from prod / dev / dr are never merged together. This is the
+#     "all environments, one ruleset" model: there are NO env filters in the
+#     expressions; the environment travels with the alert as labels.
+#   * partial_response_strategy: abort  -> if a Store/Querier is unreachable,
+#     the rule evaluation aborts instead of silently alerting on partial data.
+#     This is the Thanos-recommended setting for alerting (default, set
+#     explicitly here for clarity).
+#   * Thresholds come straight from the agreed alert table. Where one global
+#     threshold is a compromise across envs (e.g. Queue Depth critical), it is
+#     called out inline. See the companion guide for how to recalibrate.
+#   * Annotation/label conventions are PLACEHOLDERS. Replace the values marked
+#     "TODO(conventions)" with your repo's routing labels and runbook/dashboard
+#     URL patterns, then this file is ready to commit.
+#
+# Metric reference (all gauges/counters already emitted by the consumer):
+#   queue_approximate_message_count            gauge   - main queue depth
+#   queue_oldest_message_age_seconds           gauge   - age of oldest visible msg
+#   queue_dead_letter_approximate_count        gauge   - DLQ depth
+#   queue_consumer_runs_total{status}          counter - consumer task runs
+#   queue_messages_dequeued_total              counter - msgs pulled from queue
+#   queue_messages_uploaded_total{status}      counter - msgs written to CosmosDB
+#   queue_messages_deleted_total{status}       counter - post-process deletes
+#   queue_messages_sent_total{status}          counter - enqueue (success/fallback)
+#   queue_message_processing_duration_seconds  histogram
+#   queue_dead_letter_messages_total{reason}   counter - moved to DLQ
+#   queue_dead_letter_store_failures_total     counter - failed to write to DLQ
+#   queue_dead_letter_delete_failures_total    counter - failed to remove from main
+# =============================================================================
+
+groups:
+  # ---------------------------------------------------------------------------
+  # MAIN QUEUE: depth, age, consumer liveness, processing health, fallback
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.main
+    partial_response_strategy: abort
+    rules:
+
+      # --- Oldest Message Age -------------------------------------------------
+      - alert: QueueOldestMessageAgeWarning
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_oldest_message_age_seconds
+          ) > 600
+        for: 5m
+        labels:
+          severity: warning
+          # TODO(conventions): add routing labels, e.g. team / service / squad
+          service: genai-queue-consumption
+          component: main-queue
+        annotations:
+          summary: "Oldest queue message older than 10m ({{ $labels.queue_name }})"
+          description: >-
+            Oldest visible message in queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} old. Messages should be processed
+            within ~2 celery-beat cycles (~4m); 10m+ implies 2+ failed attempts.
+          runbook_url: "TODO(conventions): <runbook-base>/queue-oldest-message-age"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      - alert: QueueOldestMessageAgeCritical
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_oldest_message_age_seconds
+          ) > 1800
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: main-queue
+        annotations:
+          summary: "Processing stalled: oldest message older than 30m ({{ $labels.queue_name }})"
+          description: >-
+            Oldest visible message in queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} old. Processing is stalled - most
+            likely the celery beat scheduler died. Check consumer pod liveness.
+          runbook_url: "TODO(conventions): <runbook-base>/queue-processing-stalled"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- Queue Depth --------------------------------------------------------
+      - alert: QueueDepthWarning
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            queue_approximate_message_count
+          ) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: main-queue
+        annotations:
+          summary: "Queue backlog building: depth > 1000 ({{ $labels.queue_name }})"
+          description: >-
+            Queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            has held {{ $value }} messages for 10m. Normal operation keeps depth
+            near 0; a sustained 1000+ backlog means consumers are not keeping up.
+          runbook_url: "TODO(conventions): <runbook-base>/queue-depth-backlog"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      - alert: QueueDepthCritical
+        # NOTE: single global threshold. Rationale ties to max_messages_per_run
+        # (3200 on dev-ext, 6400 on dev). 5000 is a cross-env compromise: it is
+        # already above dev-ext capacity, and below dev capacity. If you later
+        # want per-env thresholds, split this rule or template it (see guide).
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            queue_approximate_message_count
+          ) > 5000
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: main-queue
+        annotations:
+          summary: "Queue overloaded: depth > 5000 ({{ $labels.queue_name }})"
+          description: >-
+            Queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            depth is {{ $value }}, exceeding max_messages_per_run. The system
+            cannot drain the queue fast enough - investigate consumer throughput
+            / scale out.
+          runbook_url: "TODO(conventions): <runbook-base>/queue-depth-overload"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- Consumer Task Stalled (heartbeat) ----------------------------------
+      # If the consumer counter shows zero increase over 10m, the celery beat /
+      # worker has stopped scheduling runs. The counter keeps being EXPORTED
+      # (process alive, just idle), so '== 0' is reliable for the "beat died"
+      # case. Full pod death is covered by the staleness group below.
+      - alert: QueueConsumerTaskStalled
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_consumer_runs_total[10m])
+          ) == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: consumer
+        annotations:
+          summary: "Consumer stalled: no task runs in 10m ({{ $labels.queue_name }})"
+          description: >-
+            No consumer task runs recorded for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            over the last 10m. The celery beat scheduler or worker is likely
+            dead. (Seen multiple times in testing.)
+          runbook_url: "TODO(conventions): <runbook-base>/consumer-stalled"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- Processing Failure Rate --------------------------------------------
+      # Mirrors the dashboard definition: failures = dequeued - uploaded(success).
+      # Counts every retry attempt. A volume guard (> 20 dequeues / 5m) prevents
+      # a divide-by-small-number from firing on 1-2 messages. Negative numerator
+      # (in-flight messages) simply yields a ratio < 0 and cannot false-fire.
+      - alert: QueueProcessingFailureRateHigh
+        expr: |
+          (
+            sum by (cluster, namespace, release, queue_name) (increase(queue_messages_dequeued_total[5m]))
+            -
+            sum by (cluster, namespace, release, queue_name) (increase(queue_messages_uploaded_total{status="success"}[5m]))
+          )
+          /
+          clamp_min(
+            sum by (cluster, namespace, release, queue_name) (increase(queue_messages_dequeued_total[5m])),
+            1
+          ) > 0.10
+          and
+          sum by (cluster, namespace, release, queue_name) (increase(queue_messages_dequeued_total[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: consumer
+        annotations:
+          summary: "Processing failure rate > 10% ({{ $labels.queue_name }})"
+          description: >-
+            {{ $value | humanizePercentage }} of dequeued messages in queue
+            {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            failed to upload to CosmosDB over the last 5m (high failed-vs-success
+            ratio). The "> 20 dequeues" volume guard is tunable.
+          runbook_url: "TODO(conventions): <runbook-base>/processing-failure-rate"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- Fallback Active (queue storage down -> sync CosmosDB path) ----------
+      - alert: QueueFallbackToCosmosActive
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_messages_sent_total{status="fallback_cosmosdb"}[5m])
+          ) > 0
+        for: 2m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: producer
+        annotations:
+          summary: "Fallback active: enqueue failing, writing direct to CosmosDB ({{ $labels.queue_name }})"
+          description: >-
+            {{ $value }} message(s) for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            could not be enqueued in the last 5m and were processed synchronously
+            via the direct CosmosDB write path. Queue storage is likely down.
+          runbook_url: "TODO(conventions): <runbook-base>/queue-fallback-active"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- HARDENED EXTRA: processing duration approaching visibility_timeout --
+      # If p99 processing time nears the 300s visibility_timeout, a message can
+      # become visible again mid-processing -> duplicate delivery. Warn at 80%
+      # (240s), page at 95% (285s).
+      - alert: QueueProcessingDurationNearVisibilityTimeout
+        expr: |
+          histogram_quantile(0.99,
+            sum by (cluster, namespace, release, queue_name, le) (
+              rate(queue_message_processing_duration_seconds_bucket[5m])
+            )
+          ) > 240
+        for: 5m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: consumer
+        annotations:
+          summary: "p99 processing time nearing visibility_timeout ({{ $labels.queue_name }})"
+          description: >-
+            p99 processing duration for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} (> 80% of the 300s
+            visibility_timeout). Messages risk reappearing and being processed
+            twice. Consider raising visibility_timeout or speeding up processing.
+          runbook_url: "TODO(conventions): <runbook-base>/processing-duration-timeout"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      - alert: QueueProcessingDurationExceedsVisibilityTimeout
+        expr: |
+          histogram_quantile(0.99,
+            sum by (cluster, namespace, release, queue_name, le) (
+              rate(queue_message_processing_duration_seconds_bucket[5m])
+            )
+          ) > 285
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: consumer
+        annotations:
+          summary: "p99 processing time at visibility_timeout - duplication likely ({{ $labels.queue_name }})"
+          description: >-
+            p99 processing duration for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} (> 95% of the 300s
+            visibility_timeout). Messages are very likely being redelivered and
+            processed more than once.
+          runbook_url: "TODO(conventions): <runbook-base>/processing-duration-timeout"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- HARDENED EXTRA: post-processing deletion failures (duplicate risk) --
+      - alert: QueueDeletionFailures
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_messages_deleted_total{status="failure"}[5m])
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: consumer
+        annotations:
+          summary: "Processed messages not deleted from queue ({{ $labels.queue_name }})"
+          description: >-
+            {{ $value }} message(s) in queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            were uploaded to CosmosDB but could not be deleted from the queue in
+            the last 5m. They will reappear and may cause duplicate processing.
+          runbook_url: "TODO(conventions): <runbook-base>/queue-deletion-failures"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+  # ---------------------------------------------------------------------------
+  # DEAD LETTER QUEUE
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.dlq
+    partial_response_strategy: abort
+    rules:
+
+      - alert: DLQDepthWarning
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            queue_dead_letter_approximate_count
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: dlq
+        annotations:
+          summary: "Messages present in dead-letter queue ({{ $labels.queue_name }})"
+          description: >-
+            DLQ for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            holds {{ $value }} message(s). Any DLQ message means something broke
+            and needs investigation.
+          runbook_url: "TODO(conventions): <runbook-base>/dlq-non-empty"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      - alert: DLQDepthCritical
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            queue_dead_letter_approximate_count
+          ) > 100
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: dlq
+        annotations:
+          summary: "Mass failure: DLQ depth > 100 ({{ $labels.queue_name }})"
+          description: >-
+            DLQ for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            holds {{ $value }} message(s). A spike this large indicates a
+            systemic issue - bad deployment, schema change, or downstream outage.
+          runbook_url: "TODO(conventions): <runbook-base>/dlq-mass-failure"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- HARDENED EXTRA: DLQ store failures (potential message LOSS) ---------
+      - alert: DLQStoreFailures
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_dead_letter_store_failures_total[5m])
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: dlq
+        annotations:
+          summary: "Failed to write message to DLQ - possible data loss ({{ $labels.queue_name }})"
+          description: >-
+            {{ $value }} message(s) that should have been dead-lettered for queue
+            {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            could not be stored in the DLQ in the last 5m. These messages may be
+            lost - investigate immediately.
+          runbook_url: "TODO(conventions): <runbook-base>/dlq-store-failures"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # --- HARDENED EXTRA: DLQ delete failures (reprocess -> re-deadletter) ----
+      - alert: DLQDeleteFailures
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_dead_letter_delete_failures_total[5m])
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: dlq
+        annotations:
+          summary: "Dead-lettered message not removed from main queue ({{ $labels.queue_name }})"
+          description: >-
+            {{ $value }} message(s) for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            were moved to the DLQ but could not be deleted from the main queue in
+            the last 5m. They will be processed again and re-dead-lettered.
+          runbook_url: "TODO(conventions): <runbook-base>/dlq-delete-failures"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+  # ---------------------------------------------------------------------------
+  # STALENESS BACKSTOP (metrics pipeline / full pod death)
+  # ---------------------------------------------------------------------------
+  # absent_over_time() cannot iterate dynamic label values (queue_name), so this
+  # is intentionally COARSE: it fires only if the metric disappears entirely for
+  # a given cluster+namespace. It catches the case the per-queue threshold rules
+  # miss: the exporter/consumer pod is gone, so there are no series to evaluate.
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.staleness
+    partial_response_strategy: abort
+    rules:
+
+      - alert: QueueMetricsAbsent
+        expr: |
+          absent_over_time(queue_approximate_message_count[10m])
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: pipeline
+        annotations:
+          summary: "Queue metrics missing - exporter/consumer may be down"
+          description: >-
+            No queue_approximate_message_count samples have been received for 10m.
+            The consumer/exporter pod is likely down or the scrape is failing, so
+            depth/age/stall threshold alerts cannot evaluate. Threshold-based
+            alerts go BLIND in this state - treat as an outage.
+            (Coarse by design: absent() cannot key on queue_name.)
+          runbook_url: "TODO(conventions): <runbook-base>/queue-metrics-absent"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption"
+
+      - alert: QueueConsumerMetricsAbsent
+        expr: |
+          absent_over_time(queue_consumer_runs_total[15m])
+        for: 5m
+        labels:
+          severity: critical
+          service: genai-queue-consumption
+          component: consumer
+        annotations:
+          summary: "Consumer run metrics missing - worker may be down"
+          description: >-
+            No queue_consumer_runs_total samples have been received for 15m. The
+            consumer process is likely not running at all (distinct from "beat
+            stalled" - here the metric itself is gone). The QueueConsumerTaskStalled
+            alert cannot fire in this state, so this backstop covers it.
+          runbook_url: "TODO(conventions): <runbook-base>/consumer-metrics-absent"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption"

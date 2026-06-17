@@ -1,0 +1,107 @@
+# =============================================================================
+# GenAI Platform - Queue Storage Consumption: ANOMALY / BASELINE RULES (Thanos)
+# Jira: GENAI-2580   |   OPT-IN - deploy after the static threshold rules.
+#
+# WHY a separate file:
+#   The static thresholds (depth > 5000, age > 30m, ...) catch absolute outages.
+#   They do NOT catch a *relative* slowdown - e.g. throughput quietly dropping to
+#   30% of normal while depth stays under threshold. This file adds a Z-SCORE
+#   baseline that flags "this queue is behaving abnormally vs its own recent
+#   history", which is exactly the dynamic signal you asked about.
+#
+# HOW it works:
+#   1. A recording rule samples processing throughput every eval interval.
+#   2. avg_over_time()/stddev_over_time() over a trailing window estimate the
+#      baseline mean (mu) and standard deviation (sigma).
+#   3. z = (current - mu) / sigma. |z| > 3 ~= outside the 99.7% band.
+#
+# WARMUP: the z-score alerts are only meaningful once the recording rule has
+#   accumulated a full baseline window (default 6h) of data in TSDB. Expect no
+#   firing / noisy firing during the first window after deploy.
+#
+# TUNING: see the companion guide. Start CONSERVATIVE (z < -3, for: 10m) and
+#   tighten only after observing a week of normal behaviour.
+# =============================================================================
+
+groups:
+  # ---------------------------------------------------------------------------
+  # Recording rules - the baseline inputs. Keep these in their own group so they
+  # evaluate independently and are reusable by dashboards and other alerts.
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.recording
+    partial_response_strategy: abort
+    interval: 1m
+    rules:
+      # Successful uploads/sec = effective processing throughput.
+      - record: queue:processing_throughput:rate5m
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            rate(queue_messages_uploaded_total{status="success"}[5m])
+          )
+
+      # Dequeue rate - useful as a load reference for the throughput baseline.
+      - record: queue:messages_dequeued:rate5m
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            rate(queue_messages_dequeued_total[5m])
+          )
+
+  # ---------------------------------------------------------------------------
+  # Z-score anomaly alerts (opt-in). Baseline window = 6h (trailing).
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.anomaly
+    partial_response_strategy: abort
+    rules:
+
+      # Throughput collapse vs the queue's own 6h baseline. One-sided (drops
+      # only): we care about processing slowing down, not speeding up.
+      # Guards:
+      #   * baseline mean > 0.1 msg/s  -> ignore queues that are normally idle
+      #   * baseline stddev > 0        -> avoid divide-by-zero / flat series
+      - alert: QueueThroughputAnomalousDrop
+        expr: |
+          (
+            queue:processing_throughput:rate5m
+            - avg_over_time(queue:processing_throughput:rate5m[6h])
+          )
+          / stddev_over_time(queue:processing_throughput:rate5m[6h]) < -3
+          and
+          avg_over_time(queue:processing_throughput:rate5m[6h]) > 0.1
+          and
+          stddev_over_time(queue:processing_throughput:rate5m[6h]) > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: genai-queue-consumption
+          component: consumer
+          alert_type: anomaly
+        annotations:
+          summary: "Processing throughput anomalously low vs baseline ({{ $labels.queue_name }})"
+          description: >-
+            Processing throughput for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is more than 3 standard deviations below its trailing 6h mean. The
+            queue is processing far slower than normal even though static
+            thresholds may not have tripped yet - early sign of degradation.
+          runbook_url: "TODO(conventions): <runbook-base>/throughput-anomaly"
+          dashboard_url: "TODO(conventions): <grafana-base>/d/genai-queue-storage-consumption?var-cluster={{ $labels.cluster }}&var-namespace={{ $labels.namespace }}&var-queue_name={{ $labels.queue_name }}"
+
+      # OPTIONAL two-sided variant (depth surging abnormally high vs baseline).
+      # Uncomment and add a recording rule for depth if you want it.
+      # - alert: QueueDepthAnomalousSpike
+      #   expr: |
+      #     (
+      #       queue:queue_depth:avg5m
+      #       - avg_over_time(queue:queue_depth:avg5m[6h])
+      #     )
+      #     / stddev_over_time(queue:queue_depth:avg5m[6h]) > 3
+      #     and avg_over_time(queue:queue_depth:avg5m[6h]) > 10
+      #     and stddev_over_time(queue:queue_depth:avg5m[6h]) > 0
+      #   for: 10m
+      #   labels:
+      #     severity: warning
+      #     service: genai-queue-consumption
+      #     component: main-queue
+      #     alert_type: anomaly
+      #   annotations:
+      #     summary: "Queue depth anomalously high vs baseline ({{ $labels.queue_name }})"
