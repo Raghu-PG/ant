@@ -1,0 +1,700 @@
+# =============================================================================
+# GenAI Platform — Queue Storage Consumption Monitoring Alerts
+# Jira: GENAI-2580
+# Dashboard: genai-queue-storage-consumption
+#
+# NOTES:
+#   - Gauge metrics (depth, age, DLQ depth) use `max by (...)` because the
+#     exporter emits one series PER POD. Using `sum` would multiply the real
+#     queue depth by the number of consumer pods.
+#   - Counter metrics (dequeued, uploaded, consumer_runs, dlq_messages) use
+#     `sum by (...)` because each pod processes different messages additively.
+#   - Grouping by (cluster, namespace, release, queue_name) ensures environments
+#     never merge across the global Thanos view.
+#   - 4 metrics referenced in the dashboard JSON do not exist yet:
+#       queue_messages_sent_total, queue_messages_deleted_total,
+#       queue_dead_letter_store_failures_total, queue_dead_letter_delete_failures_total
+#     Alerts for these are commented out — enable when the app emits them.
+# =============================================================================
+
+groups:
+  # ---------------------------------------------------------------------------
+  # RECORDING RULES — baseline inputs for the anomaly alert
+  # Uses histogram _count (completions regardless of success/failure) because
+  # query confirmed queue_messages_uploaded_total only has status="failure",
+  # no status="success" series exists.
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.recording.rules
+    interval: 1m
+    rules:
+      - record: queue:processing_throughput:rate5m
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            rate(queue_message_processing_duration_seconds_count[5m])
+          )
+
+      - record: queue:messages_dequeued:rate5m
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            rate(queue_messages_dequeued_total[5m])
+          )
+
+  # ---------------------------------------------------------------------------
+  # MAIN QUEUE ALERTS
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.main.alerts
+    rules:
+
+      # --- Oldest Message Age — Warning (> 10m) -------------------------------
+      - alert: GenAI_QueueOldestMessageAge_Warning
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_oldest_message_age_seconds
+          ) > 600
+        for: 5m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Oldest Message Age Warning
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] Oldest message > 10m — {{ $labels.queue_name }} ({{ $labels.cluster }})'
+        annotations:
+          message: >-
+            Oldest visible message in queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} old. Normal processing should clear
+            messages within ~4m (2 celery-beat cycles). 10m+ implies repeated failures.
+
+      # --- Oldest Message Age — Critical (> 30m) -----------------------------
+      - alert: GenAI_QueueOldestMessageAge_Critical
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_oldest_message_age_seconds
+          ) > 1800
+        for: 5m
+        labels:
+          severity: Critical
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Oldest Message Age Critical
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          application_name: GenAI
+          conveyor_route: universal_connector
+          actionability_type: 'incident,email'
+          alert_actionable: 'true'
+          cost_center: 8000501288
+          lob: itsgenai
+          snow_assignment_group: DevOps_AdvAnalytApps
+          snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+          snow_category: 'Business Application & Databases'
+          snow_component: Alerts
+          snow_configuration_item: GenAI (Artificial Intelligence) Platform
+          snow_contact_type: Auto Ticket
+          snow_description: 'Queue processing stalled — oldest message older than 30m. Consumer/celery beat may be dead. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+          snow_impact: '3'
+          snow_is_cbp_impacted: 'No'
+          snow_incident_type: 'Operations: Application Availability'
+          snow_location: ALL LOCATIONS
+          snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+          snow_short_description: 'GenAI Queue Processing Stalled — Oldest Message > 30m'
+          snow_subcategory: Business Applications
+          snow_urgency: '2'
+          email_subject: '[GenAI Queue] CRITICAL: Processing stalled — oldest message > 30m ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            Oldest visible message in queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} old. Processing is stalled — most likely
+            the celery beat scheduler died. Check consumer pod liveness immediately.
+
+      # --- Queue Depth — Warning (> 1000) ------------------------------------
+      - alert: GenAI_QueueDepth_Warning
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_approximate_message_count
+          ) > 1000
+        for: 10m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Depth Warning
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] Backlog building — depth > 1000 ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            Queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            has held {{ $value }} messages for 10m. Normal operation keeps depth near 0.
+
+      # --- Queue Depth — Critical (> 5000) -----------------------------------
+      - alert: GenAI_QueueDepth_Critical
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_approximate_message_count
+          ) > 5000
+        for: 5m
+        labels:
+          severity: Critical
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Depth Critical
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          application_name: GenAI
+          conveyor_route: universal_connector
+          actionability_type: 'incident,email'
+          alert_actionable: 'true'
+          cost_center: 8000501288
+          lob: itsgenai
+          snow_assignment_group: DevOps_AdvAnalytApps
+          snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+          snow_category: 'Business Application & Databases'
+          snow_component: Alerts
+          snow_configuration_item: GenAI (Artificial Intelligence) Platform
+          snow_contact_type: Auto Ticket
+          snow_description: 'Queue overloaded — depth > 5000. System cannot drain fast enough. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+          snow_impact: '3'
+          snow_is_cbp_impacted: 'No'
+          snow_incident_type: 'Operations: Application Availability'
+          snow_location: ALL LOCATIONS
+          snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+          snow_short_description: 'GenAI Queue Overloaded — Depth > 5000'
+          snow_subcategory: Business Applications
+          snow_urgency: '2'
+          email_subject: '[GenAI Queue] CRITICAL: Queue overloaded — depth > 5000 ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            Queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            depth is {{ $value }}. The system cannot drain the queue fast enough —
+            investigate consumer throughput or scale out.
+
+      # --- Consumer Task Stalled (no runs in 10m) ----------------------------
+      - alert: GenAI_QueueConsumerTaskStalled_Critical
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_consumer_runs_total[10m])
+          ) == 0
+        for: 5m
+        labels:
+          severity: Critical
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Consumer Task Stalled
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          application_name: GenAI
+          conveyor_route: universal_connector
+          actionability_type: 'incident,email'
+          alert_actionable: 'true'
+          cost_center: 8000501288
+          lob: itsgenai
+          snow_assignment_group: DevOps_AdvAnalytApps
+          snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+          snow_category: 'Business Application & Databases'
+          snow_component: Alerts
+          snow_configuration_item: GenAI (Artificial Intelligence) Platform
+          snow_contact_type: Auto Ticket
+          snow_description: 'Consumer stalled — no task runs in 10m. Celery beat scheduler or worker likely dead. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+          snow_impact: '3'
+          snow_is_cbp_impacted: 'No'
+          snow_incident_type: 'Operations: Application Availability'
+          snow_location: ALL LOCATIONS
+          snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+          snow_short_description: 'GenAI Queue Consumer Stalled — No Runs in 10m'
+          snow_subcategory: Business Applications
+          snow_urgency: '2'
+          email_subject: '[GenAI Queue] CRITICAL: Consumer stalled — no task runs in 10m ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            No consumer task runs recorded for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            over the last 10m. Celery beat scheduler or worker is likely dead.
+
+      # --- Processing Failure Rate > 10% ------------------------------------
+      - alert: GenAI_QueueProcessingFailureRate_Warning
+        expr: |
+          sum by (cluster, namespace, release, queue_name) (
+            rate(queue_messages_uploaded_total{status="failure"}[5m])
+          )
+          / clamp_min(
+            sum by (cluster, namespace, release, queue_name) (
+              rate(queue_messages_dequeued_total[5m])
+            ), 0.001
+          ) > 0.10
+          and
+          sum by (cluster, namespace, release, queue_name) (
+            increase(queue_messages_dequeued_total[5m])
+          ) > 20
+        for: 5m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Processing Failure Rate High
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] Processing failure rate > 10% ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            {{ $value | humanizePercentage }} of dequeued messages in queue
+            {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            failed to upload to CosmosDB over the last 5m.
+
+      # --- Processing Duration Near Visibility Timeout (p99 > 240s = 80%) ----
+      - alert: GenAI_QueueProcessingDuration_Warning
+        expr: |
+          histogram_quantile(0.99,
+            sum by (cluster, namespace, release, queue_name, le) (
+              rate(queue_message_processing_duration_seconds_bucket[5m])
+            )
+          ) > 240
+        for: 5m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Processing Duration Near Timeout
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] p99 processing time nearing visibility_timeout ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            p99 processing duration for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} (> 80% of the 300s visibility_timeout).
+            Messages risk reappearing and being processed twice.
+
+      # --- Processing Duration Exceeds Visibility Timeout (p99 > 285s = 95%) -
+      - alert: GenAI_QueueProcessingDuration_Critical
+        expr: |
+          histogram_quantile(0.99,
+            sum by (cluster, namespace, release, queue_name, le) (
+              rate(queue_message_processing_duration_seconds_bucket[5m])
+            )
+          ) > 285
+        for: 5m
+        labels:
+          severity: Critical
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Processing Duration Exceeds Timeout
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          application_name: GenAI
+          conveyor_route: universal_connector
+          actionability_type: 'incident,email'
+          alert_actionable: 'true'
+          cost_center: 8000501288
+          lob: itsgenai
+          snow_assignment_group: DevOps_AdvAnalytApps
+          snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+          snow_category: 'Business Application & Databases'
+          snow_component: Alerts
+          snow_configuration_item: GenAI (Artificial Intelligence) Platform
+          snow_contact_type: Auto Ticket
+          snow_description: 'p99 processing time at visibility_timeout — message duplication likely. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+          snow_impact: '3'
+          snow_is_cbp_impacted: 'No'
+          snow_incident_type: 'Operations: Application Availability'
+          snow_location: ALL LOCATIONS
+          snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+          snow_short_description: 'GenAI Queue Processing Duration Exceeds Visibility Timeout'
+          snow_subcategory: Business Applications
+          snow_urgency: '2'
+          email_subject: '[GenAI Queue] CRITICAL: p99 processing at visibility_timeout — duplication likely ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            p99 processing duration for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }} (> 95% of 300s visibility_timeout).
+            Messages are very likely being redelivered and processed more than once.
+
+  # ---------------------------------------------------------------------------
+  # DEAD LETTER QUEUE ALERTS
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.dlq.alerts
+    rules:
+
+      # --- DLQ Depth — Warning (> 0) ----------------------------------------
+      - alert: GenAI_DLQDepth_Warning
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_dead_letter_approximate_count
+          ) > 0
+        for: 5m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI DLQ Non-Empty
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] Messages in dead-letter queue ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            DLQ for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            holds {{ $value }} message(s). Any DLQ message means something broke.
+
+      # --- DLQ Depth — Critical (> 100) -------------------------------------
+      - alert: GenAI_DLQDepth_Critical
+        expr: |
+          max by (cluster, namespace, release, queue_name) (
+            queue_dead_letter_approximate_count
+          ) > 100
+        for: 5m
+        labels:
+          severity: Critical
+          alert_namespace: itsgenai
+          alert_name: GenAI DLQ Mass Failure
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          application_name: GenAI
+          conveyor_route: universal_connector
+          actionability_type: 'incident,email'
+          alert_actionable: 'true'
+          cost_center: 8000501288
+          lob: itsgenai
+          snow_assignment_group: DevOps_AdvAnalytApps
+          snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+          snow_category: 'Business Application & Databases'
+          snow_component: Alerts
+          snow_configuration_item: GenAI (Artificial Intelligence) Platform
+          snow_contact_type: Auto Ticket
+          snow_description: 'DLQ depth > 100 — mass failure. Bad deployment, schema change, or downstream outage. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+          snow_impact: '2'
+          snow_is_cbp_impacted: 'No'
+          snow_incident_type: 'Operations: Application Availability'
+          snow_location: ALL LOCATIONS
+          snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+          snow_short_description: 'GenAI DLQ Mass Failure — Depth > 100'
+          snow_subcategory: Business Applications
+          snow_urgency: '2'
+          email_subject: '[GenAI Queue] CRITICAL: DLQ mass failure — depth > 100 ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            DLQ for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            holds {{ $value }} message(s). A spike this large indicates a systemic
+            issue — bad deployment, schema change, or downstream outage.
+
+  # ---------------------------------------------------------------------------
+  # STALENESS BACKSTOP — metrics pipeline / full pod death
+  # NOTE: Enable these alerts ONLY once queue metrics are deployed to production.
+  #       If enabled before metrics exist, they will fire permanently.
+  # ---------------------------------------------------------------------------
+  # - name: genai-queue-storage.staleness.alerts
+  #   rules:
+  #     - alert: GenAI_QueueMetricsAbsent_Critical
+  #       expr: |
+  #         absent_over_time(queue_approximate_message_count[10m])
+  #       for: 5m
+  #       labels:
+  #         severity: Critical
+  #         alert_namespace: itsgenai
+  #         alert_name: GenAI Queue Metrics Absent
+  #         alert_owner: advanalyticsapps.im@pg.com
+  #         name_space: itsgenai
+  #         primary_property: fingerprint
+  #         secondary_property: startsAt
+  #         source_system: spyglass
+  #         uc_environment: prod
+  #         correlation_rule: alert_name
+  #         application_name: GenAI
+  #         conveyor_route: universal_connector
+  #         actionability_type: 'incident,email'
+  #         alert_actionable: 'true'
+  #         cost_center: 8000501288
+  #         lob: itsgenai
+  #         snow_assignment_group: DevOps_AdvAnalytApps
+  #         snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+  #         snow_category: 'Business Application & Databases'
+  #         snow_component: Alerts
+  #         snow_configuration_item: GenAI (Artificial Intelligence) Platform
+  #         snow_contact_type: Auto Ticket
+  #         snow_description: 'Queue metrics missing for 10m — exporter/consumer pod may be down. All threshold alerts are BLIND. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+  #         snow_impact: '3'
+  #         snow_is_cbp_impacted: 'No'
+  #         snow_incident_type: 'Operations: Application Availability'
+  #         snow_location: ALL LOCATIONS
+  #         snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+  #         snow_short_description: 'GenAI Queue Metrics Absent — Exporter May Be Down'
+  #         snow_subcategory: Business Applications
+  #         snow_urgency: '2'
+  #         email_subject: '[GenAI Queue] CRITICAL: Queue metrics missing — exporter may be down'
+  #       annotations:
+  #         message: >-
+  #           No queue_approximate_message_count samples received for 10m. The
+  #           consumer/exporter pod is likely down. Threshold alerts cannot evaluate.
+  #
+  #     - alert: GenAI_QueueConsumerMetricsAbsent_Critical
+  #       expr: |
+  #         absent_over_time(queue_consumer_runs_total[15m])
+  #       for: 5m
+  #       labels:
+  #         severity: Critical
+  #         alert_namespace: itsgenai
+  #         alert_name: GenAI Queue Consumer Metrics Absent
+  #         alert_owner: advanalyticsapps.im@pg.com
+  #         name_space: itsgenai
+  #         primary_property: fingerprint
+  #         secondary_property: startsAt
+  #         source_system: spyglass
+  #         uc_environment: prod
+  #         correlation_rule: alert_name
+  #         application_name: GenAI
+  #         conveyor_route: universal_connector
+  #         actionability_type: 'incident,email'
+  #         alert_actionable: 'true'
+  #         cost_center: 8000501288
+  #         lob: itsgenai
+  #         snow_assignment_group: DevOps_AdvAnalytApps
+  #         snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+  #         snow_category: 'Business Application & Databases'
+  #         snow_component: Alerts
+  #         snow_configuration_item: GenAI (Artificial Intelligence) Platform
+  #         snow_contact_type: Auto Ticket
+  #         snow_description: 'Consumer run metrics missing for 15m — worker process may be dead. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+  #         snow_impact: '3'
+  #         snow_is_cbp_impacted: 'No'
+  #         snow_incident_type: 'Operations: Application Availability'
+  #         snow_location: ALL LOCATIONS
+  #         snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+  #         snow_short_description: 'GenAI Queue Consumer Metrics Absent — Worker May Be Down'
+  #         snow_subcategory: Business Applications
+  #         snow_urgency: '2'
+  #         email_subject: '[GenAI Queue] CRITICAL: Consumer metrics missing — worker may be down'
+  #       annotations:
+  #         message: >-
+  #           No queue_consumer_runs_total samples received for 15m. The consumer
+  #           process is not running. Distinct from "stalled" — here the metric itself is gone.
+
+  # ---------------------------------------------------------------------------
+  # ANOMALY DETECTION — z-score baseline (throughput drop)
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.anomaly.alerts
+    rules:
+      - alert: GenAI_QueueThroughputAnomaly_Warning
+        expr: |
+          (
+            queue:processing_throughput:rate5m
+            - avg_over_time(queue:processing_throughput:rate5m[6h])
+          )
+          / clamp_min(stddev_over_time(queue:processing_throughput:rate5m[6h]), 0.001) < -3
+          and
+          avg_over_time(queue:processing_throughput:rate5m[6h]) > 0.1
+          and
+          stddev_over_time(queue:processing_throughput:rate5m[6h]) > 0
+        for: 10m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Throughput Anomalous Drop
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] Throughput anomalously low vs baseline ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            Processing throughput for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is more than 3 standard deviations below its trailing 6h mean. The queue
+            is processing far slower than normal — early sign of degradation.
+
+  # ===========================================================================
+  # COMMENTED OUT — metrics not yet emitted by the application
+  # Uncomment each alert when the corresponding metric becomes available.
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # QueueFallbackToCosmosActive (AGREED TABLE ALERT)
+  # Metric needed: queue_messages_sent_total{status="fallback_cosmosdb"}
+  # Alternative: check if queue_actions carries enqueue/fallback signal
+  # ---------------------------------------------------------------------------
+  # - name: genai-queue-storage.fallback.alerts
+  #   rules:
+  #     - alert: GenAI_QueueFallbackToCosmos_Warning
+  #       expr: |
+  #         sum by (cluster, namespace, release, queue_name) (
+  #           increase(queue_messages_sent_total{status="fallback_cosmosdb"}[5m])
+  #         ) > 0
+  #       for: 2m
+  #       labels:
+  #         severity: Warning
+  #         alert_namespace: itsgenai
+  #         alert_name: GenAI Queue Fallback to CosmosDB Active
+  #         alert_owner: advanalyticsapps.im@pg.com
+  #         name_space: itsgenai
+  #         primary_property: fingerprint
+  #         secondary_property: startsAt
+  #         source_system: spyglass
+  #         uc_environment: prod
+  #         correlation_rule: alert_name
+  #         email_subject: '[GenAI Queue] Fallback active — writing direct to CosmosDB ({{ $labels.queue_name }})'
+  #       annotations:
+  #         message: >-
+  #           {{ $value }} message(s) for queue {{ $labels.queue_name }} could not be
+  #           enqueued and were processed via the direct CosmosDB fallback path.
+  #           Queue storage is likely down.
+
+  # ---------------------------------------------------------------------------
+  # QueueDeletionFailures
+  # Metric needed: queue_messages_deleted_total{status="failure"}
+  # ---------------------------------------------------------------------------
+  # - name: genai-queue-storage.deletion.alerts
+  #   rules:
+  #     - alert: GenAI_QueueDeletionFailures_Warning
+  #       expr: |
+  #         sum by (cluster, namespace, release, queue_name) (
+  #           increase(queue_messages_deleted_total{status="failure"}[5m])
+  #         ) > 0
+  #       for: 5m
+  #       labels:
+  #         severity: Warning
+  #         alert_namespace: itsgenai
+  #         alert_name: GenAI Queue Deletion Failures
+  #         alert_owner: advanalyticsapps.im@pg.com
+  #         name_space: itsgenai
+  #         primary_property: fingerprint
+  #         secondary_property: startsAt
+  #         source_system: spyglass
+  #         uc_environment: prod
+  #         correlation_rule: alert_name
+  #         email_subject: '[GenAI Queue] Processed messages not deleted — duplicate risk ({{ $labels.queue_name }})'
+  #       annotations:
+  #         message: >-
+  #           {{ $value }} message(s) in queue {{ $labels.queue_name }} were uploaded
+  #           to CosmosDB but could not be deleted. They will reappear and may cause
+  #           duplicate processing.
+
+  # ---------------------------------------------------------------------------
+  # DLQStoreFailures
+  # Metric needed: queue_dead_letter_store_failures_total
+  # ---------------------------------------------------------------------------
+  # - name: genai-queue-storage.dlq-store.alerts
+  #   rules:
+  #     - alert: GenAI_DLQStoreFailures_Critical
+  #       expr: |
+  #         sum by (cluster, namespace, release, queue_name) (
+  #           increase(queue_dead_letter_store_failures_total[5m])
+  #         ) > 0
+  #       for: 5m
+  #       labels:
+  #         severity: Critical
+  #         alert_namespace: itsgenai
+  #         alert_name: GenAI DLQ Store Failures
+  #         alert_owner: advanalyticsapps.im@pg.com
+  #         name_space: itsgenai
+  #         primary_property: fingerprint
+  #         secondary_property: startsAt
+  #         source_system: spyglass
+  #         uc_environment: prod
+  #         correlation_rule: alert_name
+  #         application_name: GenAI
+  #         conveyor_route: universal_connector
+  #         actionability_type: 'incident,email'
+  #         alert_actionable: 'true'
+  #         cost_center: 8000501288
+  #         lob: itsgenai
+  #         snow_assignment_group: DevOps_AdvAnalytApps
+  #         snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+  #         snow_category: 'Business Application & Databases'
+  #         snow_component: Alerts
+  #         snow_configuration_item: GenAI (Artificial Intelligence) Platform
+  #         snow_contact_type: Auto Ticket
+  #         snow_description: 'Failed to write message to DLQ — possible data loss. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+  #         snow_impact: '2'
+  #         snow_is_cbp_impacted: 'No'
+  #         snow_incident_type: 'Operations: Application Availability'
+  #         snow_location: ALL LOCATIONS
+  #         snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+  #         snow_short_description: 'GenAI DLQ Store Failures — Possible Data Loss'
+  #         snow_subcategory: Business Applications
+  #         snow_urgency: '1'
+  #         email_subject: '[GenAI Queue] CRITICAL: Failed to write to DLQ — data loss risk ({{ $labels.queue_name }})'
+  #       annotations:
+  #         message: >-
+  #           {{ $value }} message(s) that should have been dead-lettered for queue
+  #           {{ $labels.queue_name }} could not be stored. These messages may be lost.
+
+  # ---------------------------------------------------------------------------
+  # DLQDeleteFailures
+  # Metric needed: queue_dead_letter_delete_failures_total
+  # ---------------------------------------------------------------------------
+  # - name: genai-queue-storage.dlq-delete.alerts
+  #   rules:
+  #     - alert: GenAI_DLQDeleteFailures_Warning
+  #       expr: |
+  #         sum by (cluster, namespace, release, queue_name) (
+  #           increase(queue_dead_letter_delete_failures_total[5m])
+  #         ) > 0
+  #       for: 5m
+  #       labels:
+  #         severity: Warning
+  #         alert_namespace: itsgenai
+  #         alert_name: GenAI DLQ Delete Failures
+  #         alert_owner: advanalyticsapps.im@pg.com
+  #         name_space: itsgenai
+  #         primary_property: fingerprint
+  #         secondary_property: startsAt
+  #         source_system: spyglass
+  #         uc_environment: prod
+  #         correlation_rule: alert_name
+  #         email_subject: '[GenAI Queue] Dead-lettered message not removed from main queue ({{ $labels.queue_name }})'
+  #       annotations:
+  #         message: >-
+  #           {{ $value }} message(s) for queue {{ $labels.queue_name }} were moved to
+  #           the DLQ but could not be deleted from the main queue. They will be
+  #           reprocessed and re-dead-lettered.
