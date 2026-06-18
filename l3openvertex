@@ -1,0 +1,270 @@
+Here's the full consolidated reference of everything I extracted from your three existing dashboard JSONs. Paste this alongside your fresh D.4–D.14 + label results and your AI will have complete grounding.
+
+---
+
+## GROUND TRUTH — extracted from existing dashboards (`procter-gamble` Spyglass)
+
+### 1. Existing L3 dashboards (the baseline being replaced/extended)
+| Dashboard | uid | title | Source | Tags |
+|---|---|---|---|---|
+| OpenAI Requests | `fe2bopk8yct1cf` | OpenAI Requests | Prometheus/Thanos | `[GenAI, OpenAI, L3]` |
+| OpenAI Latency | `fe7du5d23bvnkc` | OpenAI Latency Dashboard | Prometheus/Thanos | `[GenAI, OpenAI, L3]` |
+| VertexAI Errors (Prod) | `mojxqtk` | VertexAI Errors (Prod) | LogScale | `[L3]` |
+
+### 2. Datasource facts
+- **Prometheus/Thanos**: type `prometheus`, uid `P5DCFC7561CCDE821` — all OpenAI Azure panels.
+- **LogScale**: type `grafana-falconlogscale-datasource`, repo `aks-aif-mt` (Anthropic L3 datasource uid `cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf`).
+- **Rule**: PromQL → Thanos; LSQL → LogScale.
+
+### 3. OpenAI Azure metrics — CONFIRMED in use (5)
+- `azure_cognitiveservices_accounts_successrate_percent_minimum`
+- `azure_cognitiveservices_accounts_azureopenairequests_count_total`
+- `azure_cognitiveservices_accounts_servererrors_count_total`
+- `azure_cognitiveservices_accounts_clienterrors_count_total`
+- `azure_cognitiveservices_accounts_latency_milliseconds_average`
+
+All scoped by `resourceGroup="az-rg-aip-mlwgenaiplatform"`.
+
+**CONFIRMED ABSENT from every panel** (validate against your `count by(__name__)` result): no percentile-latency metric, no token/quota metric, no `StatusCode` metric → real p95/p99 must come from LogScale.
+
+### 4. Label-casing bug — exactly where it lives
+Mixed casing counts found across the two OpenAI dashboards:
+- `dimension_region` ×10 **vs** `dimension_Region` ×3
+- `dimension_operationname` ×2 **vs** `dimension_operationName` ×1
+- `dimension_RatelimitKey` ×2 **vs** `dimension_ratelimitkey` ×1
+- `dimension_apiname` ×1 (only one casing seen)
+
+**Definitive evidence already in the JSON:** the working `$Region` template variable uses lowercase:
+```
+label_values(azure_cognitiveservices_accounts_latency_milliseconds_average{resourceGroup="az-rg-aip-mlwgenaiplatform"}, dimension_region)
+```
+Since that dropdown populates, `dimension_region` (lowercase) is real. Your `count by(...)` results now settle the other three labels definitively — use whichever casing returned series.
+
+**Smoking-gun broken panel:** "Total Server Errors in Region" uses `sum by(dimension_Region)` while "Server Errors by Region" uses `sum by(dimension_region)` on the *same* metric — one is silently empty.
+
+### 5. Exact PromQL from existing OpenAI panels (verbatim)
+**OpenAI Requests (`fe2bopk8yct1cf`):**
+```promql
+# SuccessRate (stat)
+min(azure_cognitiveservices_accounts_successrate_percent_minimum{resourceGroup="az-rg-aip-mlwgenaiplatform"})
+
+# Total Requests (gauge)
+sum by(__name__)(sum_over_time(azure_cognitiveservices_accounts_azureopenairequests_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# SuccessRate by Region (stat)
+min by(dimension_region)(azure_cognitiveservices_accounts_successrate_percent_minimum{resourceGroup="az-rg-aip-mlwgenaiplatform"})
+
+# Total Server Errors in Region  -- uses dimension_Region (suspect)
+max(sum by(dimension_Region)(sum_over_time(azure_cognitiveservices_accounts_servererrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range])))
+
+# Total Server Errors (gauge)
+sum by(__name__)(sum_over_time(azure_cognitiveservices_accounts_servererrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Server Errors by Region (bargauge)
+sum by(dimension_region)(sum_over_time(azure_cognitiveservices_accounts_servererrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Server Errors by RatelimitKey (bargauge)
+sum by(dimension_RatelimitKey)(sum_over_time(azure_cognitiveservices_accounts_servererrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Max Client Errors by Region (gauge)
+sum(sum_over_time(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Client Errors by ApiName (bargauge)
+sum by(dimension_apiname)(sum_over_time(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Client Errors by Region (bargauge)
+sum by(dimension_region)(sum_over_time(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Client Errors by Operation (bargauge)  -- uses dimension_operationName
+sum by(dimension_operationName)(sum_over_time(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+
+# Client Errors by RatelimitKey (bargauge)
+sum by(dimension_RatelimitKey)(sum_over_time(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"}[$__range]))
+```
+
+**OpenAI Latency (`fe7du5d23bvnkc`):**
+```promql
+# Latency by Region (avg)
+avg by(dimension_region)(avg_over_time(azure_cognitiveservices_accounts_latency_milliseconds_average{resourceGroup="az-rg-aip-mlwgenaiplatform", dimension_region=~"$Region", dimension_operationname=~"$Operation"}[$__interval]))
+
+# Latency by Region (attempted histogram_quantile -- NOTE: metric is _average, has no le bucket, so this p95 is invalid)
+histogram_quantile(0.95, sum by(le)(rate(azure_cognitiveservices_accounts_latency_milliseconds_average{resourceGroup="az-rg-aip-mlwgenaiplatform", dimension_region="$Region"}[5m])))
+
+# Latency by Deployments (avg, grouped by ratelimitkey)
+avg by(dimension_ratelimitkey)(avg_over_time(azure_cognitiveservices_accounts_latency_milliseconds_average{resourceGroup="az-rg-aip-mlwgenaiplatform", dimension_region=~"$Region", dimension_operationname=~"$Operation"}[$__interval]))
+```
+⚠️ Flag for AI: the `histogram_quantile` panel is **broken by design** — `latency_milliseconds_average` is an average gauge with no `le` buckets, so it can't yield a true p95. This reinforces "percentiles must come from LogScale."
+
+### 6. OpenAI Latency dashboard variables
+- `$Region` = `label_values(...latency_milliseconds_average{rg}, dimension_region)` (lowercase, working)
+- `$Operation` = `query_result()` (empty/placeholder — not properly wired)
+
+### 7. Vertex field model — CONFIRMED from `mojxqtk` (LogScale)
+The existing Vertex dashboard has **only 429-throttling panels** (gauge/table/logs/bargauge). Verbatim idioms:
+```
+# cloud detection
+cloud := splitString(field=request_url, by="\/", index=2)   // == "vertexai"
+
+# model extraction
+regex(field=request_url, "\/models\/(?P<model>[^\/]+)")
+# (alt seen: model := splitString(field=request_url, by="\/", index=11))
+
+# error classification CURRENTLY USED (NOT origin_status_code):
+is_error := if(condition=regex(field=levelname, "^ERROR$"), then=1, else=0)
+is_429   := if(condition=regex(field=message, "429"), then=1, else=0)
+
+# distinct request counting
+count(field=request_id, as=total_calls, distinct=true)
+
+# grouping
+groupBy([request_project_name, model], function=[...])
+```
+Header used: `kubernetes.container.name = "ipa-api-server" AND kubernetes.pod_labels.release = "prod" | parseJson(message)`
+
+**Key gaps your new Vertex L3 must verify/add** (this is exactly what D.10/D.11 test):
+- Existing Vertex uses `levelname=ERROR + message=/429/`, **NOT** `origin_status_code` → confirm `origin_status_code` exists (D.10) before adopting the Anthropic `[45]\d{2}` pattern.
+- No `execution_stats.vertexAI` latency panel exists yet → confirm it works for non-Anthropic Vertex (D.11).
+- No region/location dimension yet → confirm `/locations/<region>/` is in the route (D.9).
+
+### 8. Prod context (use everywhere)
+```
+cluster   = aks-aif-mt-prod-5f94
+namespace = tenant-genai-platform-prod
+container = ipa-api-server
+release   = prod
+repo      = aks-aif-mt
+resourceGroup = az-rg-aip-mlwgenaiplatform
+```
+
+### 9. Proven Anthropic L3 idioms to reuse (LogScale)
+- Distinct total: `request_id = * | groupBy([request_id]) | count()`
+- Failure flag: `is_fail := if(condition=regex(field=message, "origin_status_code=[45]\d{2}"), then=1, else=0)`
+- Per-request rollup: `groupBy([request_id], function=max(is_fail, as=req_failed))`
+- Single KPI: `key := "all" | groupBy([key], function=[...])`
+- Latency: `"execution statistics:" | regex(field=message, "'<provider>':\s*(?<latency>\d+\.\d+)") | percentile(field=latency, percentiles=[95])`
+- Generalized model regex (Vertex): `models/(?<model>[^/@:"]+)`
+
+---
+Here are all of them fully self-contained — each block already includes the prod header, so just selected the repo **`aks-aif-mt`** in the LogScale explorer, pasted one block, and ran. Set the time range to 30days.
+
+---
+
+### D.4 — OpenAI route shape
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = */openai/*
+| groupBy([request_url], function=count())
+| head(10)
+```
+
+### D.5 — OpenAI status codes present?
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = */openai/*
+| regex(field=message, "origin_status_code=(?P<sc>\d{3})")
+| groupBy([sc])
+```
+
+### D.6a — OpenAI latency key (`execution statistics:` / `openAI`)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = */openai/*
+| "execution statistics:"
+| regex(field=message, "'openAI':\s*(?<l>\d+\.\d+)")
+| percentile(field=l, percentiles=[50, 95, 99])
+```
+
+### D.6b — OpenAI latency fallback (`finished in <N>s`) — run this too
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = */openai/*
+| regex(field=message, "finished in (?<l>\d+\.?\d*)s")
+| percentile(field=l, percentiles=[50, 95, 99])
+```
+
+### D.7 — OpenAI project coverage
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = */openai/*
+| groupBy([request_project_name])
+```
+
+### D.8 — OpenAI sample failures (429 / 5xx / timeout)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = */openai/*
+| message = /429/ OR message = /TimeoutError/ OR message = /5\d{2}/
+| tail(20)
+```
+
+---
+
+### D.9 — Vertex route + region + publishers (excludes Anthropic)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = *vertexai* AND request_url != */anthropic/*
+| groupBy([request_url], function=count())
+| head(10)
+```
+
+### D.10 — Vertex status codes (excludes Anthropic)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = *vertexai* AND request_url != */anthropic/*
+| regex(field=message, "origin_status_code=(?P<sc>\d{3})")
+| groupBy([sc])
+```
+
+### D.11 — Vertex latency key (`execution_stats.vertexAI`) for non-Anthropic
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = *vertexai* AND request_url != */anthropic/*
+| "execution statistics:"
+| regex(field=message, "'vertexAI':\s*(?<l>\d+\.\d+)")
+| percentile(field=l, percentiles=[50, 95, 99])
+```
+
+### D.12 — Vertex quota signal + samples (429 / RESOURCE_EXHAUSTED / quota / 5xx / timeout)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = *vertexai* AND request_url != */anthropic/*
+| message = /RESOURCE_EXHAUSTED/ OR message = /quota/ OR message = /429/ OR message = /TimeoutError/ OR message = /5\d{2}/
+| tail(20)
+```
+
+### D.13 — Vertex project coverage (excludes Anthropic)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| request_url = *vertexai* AND request_url != */anthropic/*
+| groupBy([request_project_name])
+```
+
+---
+
+### D.14 — Retry / fallback / timeout markers (both providers)
+```
+#kubernetes.cluster = "aks-aif-mt-prod-5f94" AND kubernetes.container.name = "ipa-api-server" AND #kubernetes.namespace = "tenant-genai-platform-prod" AND kubernetes.pod_labels.release = "prod"
+| parseJson(field=message)
+| message = /retry/i OR message = /fallback/i OR message = /timeout/i
+| groupBy([request_url], function=count())
+| head(20)
+```
+
+count by(dimension_region)(azure_cognitiveservices_accounts_servererrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"})
+count by(dimension_operationName)(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"})
+count by(dimension_RatelimitKey)(azure_cognitiveservices_accounts_servererrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"})
+count by(dimension_apiname)(azure_cognitiveservices_accounts_clienterrors_count_total{resourceGroup="az-rg-aip-mlwgenaiplatform"})
+
+
+That's the complete carry-over from my side. Combine it with your fresh results and once you paste D.4–D.14 + the four label outputs back here. 
