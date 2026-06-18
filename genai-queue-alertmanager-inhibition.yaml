@@ -1,0 +1,110 @@
+# =============================================================================
+# GenAI Queue Storage — Alertmanager INHIBITION rules
+# Purpose: one root cause should page ONCE, not 4-5 times. These suppress
+#          downstream symptom alerts while the true cause is already firing.
+#
+# WHERE THIS GOES: this is Alertmanager configuration (alertmanager.yml), NOT the
+#   Prometheus rule ConfigMap. In a Spyglass/SRE-managed setup the Alertmanager
+#   config is often owned centrally — confirm who owns it and submit these there.
+#
+# IMPORTANT CAVEAT (Spyglass / Event Management):
+#   Inhibition reliably suppresses Alertmanager's OWN notifications (e.g. email).
+#   If your Critical alerts are delivered via the EM "universal_connector"
+#   conveyor (label conveyor_route: universal_connector) rather than Alertmanager
+#   notify, confirm that the conveyor honours inhibited alerts before relying on
+#   this to stop duplicate ServiceNow tickets. Worst case, inhibition still
+#   de-dupes the email path.
+#
+# HOW INHIBITION WORKS:
+#   - source_matchers select the firing "cause" alert.
+#   - target_matchers select the alerts to silence WHILE the source is active.
+#   - `equal` lists labels that must match between source and target, so a cause
+#     in queue A only silences symptoms in queue A.
+#   Alerts still show as "firing" in the UI; only the notification is suppressed.
+# =============================================================================
+
+inhibit_rules:
+
+  # ---------------------------------------------------------------------------
+  # 1) CONSUMER DOWN  ->  suppress all downstream queue symptoms for that queue.
+  # If the consumer/celery-beat is dead, the backlog growing, oldest message
+  # ageing, and throughput collapsing are all the SAME incident. Page once.
+  # ---------------------------------------------------------------------------
+  - source_matchers:
+      - 'alertname = "GenAI_QueueConsumerTaskStalled_Critical"'
+    target_matchers:
+      - 'alertname =~ "GenAI_(QueueOldestMessageAge|QueueDepth|QueueProcessingFailureRate|QueueProcessingDuration|QueueThroughputAnomaly|QueueLatencyP95).*"'
+    equal: ['cluster', 'namespace', 'release', 'queue_name']
+
+  # ---------------------------------------------------------------------------
+  # 2) METRICS PIPELINE DOWN  ->  suppress everything for that cluster/namespace.
+  # When the exporter/pod is gone there are no series, so most thresholds can't
+  # evaluate anyway; this de-dupes the absent/consumer-absent pair and any
+  # lingering symptom alerts. Coarse `equal` because absent() carries no
+  # queue_name. (Enable once the absent_over_time backstops are uncommented.)
+  # ---------------------------------------------------------------------------
+  - source_matchers:
+      - 'alertname = "GenAI_QueueMetricsAbsent_Critical"'
+    target_matchers:
+      - 'alertname =~ "GenAI_.*"'
+    equal: ['cluster', 'namespace']
+
+  # Exporter-down (no queue metrics) also implies consumer-metrics-absent.
+  - source_matchers:
+      - 'alertname = "GenAI_QueueMetricsAbsent_Critical"'
+    target_matchers:
+      - 'alertname = "GenAI_QueueConsumerMetricsAbsent_Critical"'
+    equal: ['cluster', 'namespace']
+
+  # ---------------------------------------------------------------------------
+  # 3) SEVERITY LADDER (family-scoped): a Critical suppresses the matching
+  # Warning for the SAME queue. Family-specific (not a blanket
+  # Critical->Warning) so an unrelated warning is never hidden.
+  # ---------------------------------------------------------------------------
+  - source_matchers:
+      - 'alertname = "GenAI_QueueDepth_Critical"'
+    target_matchers:
+      - 'alertname = "GenAI_QueueDepth_Warning"'
+    equal: ['cluster', 'namespace', 'release', 'queue_name']
+
+  - source_matchers:
+      - 'alertname = "GenAI_QueueOldestMessageAge_Critical"'
+    target_matchers:
+      - 'alertname = "GenAI_QueueOldestMessageAge_Warning"'
+    equal: ['cluster', 'namespace', 'release', 'queue_name']
+
+  - source_matchers:
+      - 'alertname = "GenAI_QueueProcessingDuration_Critical"'
+    target_matchers:
+      - 'alertname = "GenAI_QueueProcessingDuration_Warning"'
+    equal: ['cluster', 'namespace', 'release', 'queue_name']
+
+  - source_matchers:
+      - 'alertname = "GenAI_QueueLatencyP95_Critical"'
+    target_matchers:
+      - 'alertname = "GenAI_QueueLatencyP95_Warning"'
+    equal: ['cluster', 'namespace', 'release', 'queue_name']
+
+  - source_matchers:
+      - 'alertname = "GenAI_DLQDepth_Critical"'
+    target_matchers:
+      - 'alertname = "GenAI_DLQDepth_Warning"'
+    equal: ['cluster', 'namespace', 'release', 'queue_name']
+
+  # ---------------------------------------------------------------------------
+  # 4) DLQ mass failure  ->  suppress the "DLQ non-empty" warning (subset).
+  # If 100+ are dead-lettered, the "any DLQ message" warning is redundant.
+  # (Covered by rule 3's DLQDepth pair, listed here only for clarity — remove
+  # if you keep rule 3.)
+  # ---------------------------------------------------------------------------
+  # (intentionally left to rule 3 above)
+
+# -----------------------------------------------------------------------------
+# LEGACY ALERTMANAGER (< v0.22) used source_match / target_match maps instead of
+# *_matchers string lists. If your Alertmanager is older, translate e.g.:
+#   source_match:
+#     alertname: GenAI_QueueConsumerTaskStalled_Critical
+#   target_match_re:
+#     alertname: 'GenAI_(QueueOldestMessageAge|QueueDepth|...).*'
+#   equal: ['cluster','namespace','release','queue_name']
+# -----------------------------------------------------------------------------

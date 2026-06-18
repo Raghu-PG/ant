@@ -1,0 +1,107 @@
+# =============================================================================
+# GenAI Queue Storage — p95 LATENCY SLO alerts
+# Paste this group into the existing rules file
+#   (cfit-aif.ai-engineering-plus.genai-queue.rules.yaml), under `groups:`.
+#
+# WHY this is different from QueueOldestMessageAge:
+#   - QueueOldestMessageAge = a GAUGE of the single oldest unprocessed message
+#     (worst-case / "is one message stuck?").
+#   - This = the p95 of the message-age DISTRIBUTION over PROCESSED messages
+#     (typical-case / "are MOST messages slow?"). It is the real end-to-end
+#     latency SLI and is the more user-meaningful signal. Keep both — they catch
+#     different failures.
+#
+# UNITS: queue_message_age_milliseconds is in MILLISECONDS. The expression
+#   divides the quantile by 1000 so $value is in SECONDS (humanizeDuration works)
+#   and the thresholds read in seconds: 300 = 5m, 600 = 10m.
+#
+# !! CALIBRATE & CONFIRM before trusting:
+#   (a) Confirm what queue_message_age_milliseconds measures — enqueue->processed
+#       latency is assumed. If it's something else, the SLO meaning changes.
+#   (b) Set the 300s/600s targets from real data:
+#         histogram_quantile(0.95, sum by (le)(rate(queue_message_age_milliseconds_bucket[5m])))
+#       over 7-30d, then pick a target above normal p95 but below incident levels.
+#   (c) Confirm the bucket series carry cluster/namespace/release/queue_name/le.
+# =============================================================================
+
+  # ---------------------------------------------------------------------------
+  # LATENCY SLO ALERTS
+  # ---------------------------------------------------------------------------
+  - name: genai-queue-storage.slo.alerts
+    rules:
+      # --- p95 end-to-end latency SLO — Warning (> 5m) ----------------------
+      - alert: GenAI_QueueLatencyP95_Warning
+        expr: |
+          histogram_quantile(0.95,
+            sum by (cluster, namespace, release, queue_name, le) (
+              rate(queue_message_age_milliseconds_bucket[5m])
+            )
+          ) / 1000 > 300
+        for: 10m
+        labels:
+          severity: Warning
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Latency p95 SLO Warning
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          email_subject: '[GenAI Queue] p95 message latency > 5m SLO ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            p95 end-to-end message latency for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }}, breaching the 5m p95 SLO. Most
+            messages — not just the oldest — are being processed slowly. Investigate
+            consumer throughput before it escalates to a backlog.
+      # --- p95 end-to-end latency SLO — Critical (> 10m) --------------------
+      - alert: GenAI_QueueLatencyP95_Critical
+        expr: |
+          histogram_quantile(0.95,
+            sum by (cluster, namespace, release, queue_name, le) (
+              rate(queue_message_age_milliseconds_bucket[5m])
+            )
+          ) / 1000 > 600
+        for: 10m
+        labels:
+          severity: Critical
+          alert_namespace: itsgenai
+          alert_name: GenAI Queue Latency p95 SLO Critical
+          alert_owner: advanalyticsapps.im@pg.com
+          name_space: itsgenai
+          primary_property: fingerprint
+          secondary_property: startsAt
+          source_system: spyglass
+          uc_environment: prod
+          correlation_rule: alert_name
+          application_name: GenAI
+          conveyor_route: universal_connector
+          actionability_type: 'incident,email'
+          alert_actionable: 'true'
+          cost_center: '8000501288'
+          lob: itsgenai
+          snow_assignment_group: DevOps_AdvAnalytApps
+          snow_business_service: c8554ce8371c62405979a9c2b3990ef7
+          snow_category: 'Business Application & Databases'
+          snow_component: Alerts
+          snow_configuration_item: GenAI (Artificial Intelligence) Platform
+          snow_contact_type: Auto Ticket
+          snow_description: 'p95 end-to-end message latency > 10m — most messages badly delayed. Dashboard: https://grafana.spyglass.pg.com/d/genai-queue-storage-consumption'
+          snow_impact: '3'
+          snow_is_cbp_impacted: 'No'
+          snow_incident_type: 'Operations: Application Availability'
+          snow_location: ALL LOCATIONS
+          snow_service_offering: 28a5002c371c62405979a9c2b3990e21
+          snow_short_description: 'GenAI Queue p95 Latency > 10m SLO Breach'
+          snow_subcategory: Business Applications
+          snow_urgency: '2'
+          email_subject: '[GenAI Queue] CRITICAL: p95 message latency > 10m SLO ({{ $labels.queue_name }})'
+        annotations:
+          message: >-
+            p95 end-to-end message latency for queue {{ $labels.queue_name }}
+            ({{ $labels.cluster }}/{{ $labels.namespace }}/{{ $labels.release }})
+            is {{ $value | humanizeDuration }}, far past the SLO. The majority of
+            messages are taking over 10 minutes to process — systemic slowdown.
