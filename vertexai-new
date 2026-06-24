@@ -1,0 +1,2356 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "L3"
+      ],
+      "targetBlank": false,
+      "title": "GenAI L3",
+      "tooltip": "",
+      "type": "dashboards"
+    },
+    {
+      "asDropdown": false,
+      "icon": "arrow-up",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Up to GenAI L2",
+      "tooltip": "",
+      "type": "link",
+      "url": "https://grafana.spyglass.pg.com/d/jep97zs/genai-sre-operations-dashboard-l2"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "panels": [],
+      "title": "Overview / Golden Signals",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Distinct Vertex (non-Anthropic) requests in range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "id": 101,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| groupBy([request_id])\n| count()",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex Total Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Requests with no origin_status_code 4xx/5xx.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "id": 102,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| is_fail := if(condition=regex(field=message, \"origin_status_code=[45]\\d{2}\"), then=1, else=0)\n| groupBy([request_id], function=max(is_fail, as=req_failed))\n| req_failed = 0\n| count()",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex Successful",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Distinct requests with origin_status_code 4xx/5xx. Dominated by 404.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 103,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| is_fail := if(condition=regex(field=message, \"origin_status_code=[45]\\d{2}\"), then=1, else=0)\n| groupBy([request_id], function=max(is_fail, as=req_failed))\n| req_failed = 1\n| count()",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex Failed",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Failed / total distinct requests (origin_status_code>=400).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 104,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| is_fail := if(condition=regex(field=message, \"origin_status_code=[45]\\d{2}\"), then=1, else=0)\n| groupBy([request_id], function=max(is_fail, as=req_failed))\n| key := \"all\"\n| groupBy([key], function=[count(as=total), sum(req_failed, as=failed)])\n| error_rate := (failed/total)*100\n| select([error_rate])",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex Error Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "100 - (5xx/total). 4xx (incl 404/429) excluded from SLO denominator.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 105,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| is_5xx := if(condition=regex(field=message, \"origin_status_code=5\\d{2}\"), then=1, else=0)\n| groupBy([request_id], function=max(is_5xx, as=req_5xx))\n| key := \"all\"\n| groupBy([key], function=[count(as=total), sum(req_5xx, as=server_fail)])\n| availability := 100 - ((server_fail/total)*100)\n| select([availability])",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex Availability (5xx SLO)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "execution_stats.vertexAI p95 (seconds). ~21s observed (Gemini).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 40
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 106,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| \"execution statistics:\"\n| regex(field=message, \"'vertexAI':\\s*(?<latency>\\d+\\.\\d+)\")\n| percentile(field=latency, percentiles=[95])\n| p95 := _95\n| select([p95])",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex p95 Latency",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 110,
+      "panels": [],
+      "title": "Request Volume (Throughput)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Distinct requests/hour.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 111,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| timeChart(span=1h, function=count(field=request_id, as=requests, distinct=true))",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex requests over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Per Gemini/Google model (models/<model>).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 112,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| model = \"$model\"\n| timeChart(span=1h, function=count(field=request_id, as=requests, distinct=true), series=model)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex requests by model over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Total distinct requests per model.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "id": 113,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| groupBy(model, function=count(field=request_id, as=requests, distinct=true))\n| sort(requests, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex requests by model",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "From /locations/<region>/ (us-central1, any, ...).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "id": 114,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=request_url, \"/locations/(?<region>[^/]+)/\")\n| groupBy(region, function=count(field=request_id, as=requests, distinct=true))\n| sort(requests, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex requests by region",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Which application/tenant drives Vertex traffic.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "id": 115,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| groupBy(request_project_name, function=count(field=request_id, as=requests, distinct=true))\n| sort(requests, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex requests by project",
+      "type": "bargauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 120,
+      "panels": [],
+      "title": "Errors (origin_status_code; 404-led)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "origin_status_code>=400 / total distinct requests, per hour.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 121,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| is_fail := if(condition=regex(field=message, \"origin_status_code=[45]\\d{2}\"), then=1, else=0)\n| timeChart(span=1h, function=[count(field=request_id, as=total, distinct=true), sum(is_fail, as=failed)])\n| error_rate := (failed/total)*100",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex error rate over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "origin_status_code distribution. 404 dominant (~45k/30d), then 400.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 122,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "_count"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=message, \"origin_status_code=(?<status_code>\\d{3})\")\n| groupBy(status_code)\n| sort(_count, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex requests by status code",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "RCA: 404 is the #1 Vertex error. Likely model-name/endpoint/locations mismatch.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 123,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "_count"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=message, \"origin_status_code=(?<status_code>\\d{3})\")\n| status_code = \"404\"\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| regex(field=request_url, \"/locations/(?<region>[^/]+)/\")\n| groupBy([model, region, request_project_name], function=count())\n| sort(_count, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex 404 (Not Found) by model, region & project",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Trend of the key statuses.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 124,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=message, \"origin_status_code=(?<sc>\\d{3})\")\n| sc = /^(404|400|429|5\\d{2})$/\n| timeChart(span=1h, function=count(), series=sc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex status codes over time (404/400/429/5xx)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 130,
+      "panels": [],
+      "title": "Latency",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "execution_stats.vertexAI percentiles (seconds).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "id": 131,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| \"execution statistics:\"\n| regex(field=message, \"'vertexAI':\\s*(?<latency>\\d+\\.\\d+)\")\n| timeChart(span=1h, function=percentile(field=latency, percentiles=[50,90,95,99]))",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex latency p50/p90/p95/p99 over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Localise slowness to a model.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "id": 132,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| \"execution statistics:\"\n| regex(field=message, \"'vertexAI':\\s*(?<latency>\\d+\\.\\d+)\")\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| model = \"$model\"\n| timeChart(span=1h, function=percentile(field=latency, percentiles=[95]), series=model)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex p95 latency by model",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "id": 140,
+      "panels": [],
+      "title": "Throttling / Quota (validate wording)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Throttling trend (low volume ~37/30d).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "id": 141,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=message, \"origin_status_code=(?<status_code>\\d{3})\")\n| status_code = \"429\"\n| timeChart(span=1h, function=count())",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex 429 over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "[validate] Vertex quota signal (RESOURCE_EXHAUSTED / quota text).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 50
+      },
+      "id": 142,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| message = /RESOURCE_EXHAUSTED/ OR message = /quota/i\n| timeChart(span=1h, function=count())",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex quota / RESOURCE_EXHAUSTED over time",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "id": 150,
+      "panels": [],
+      "title": "Retry / Fallback / Timeout (validate wording)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "[validate] retry|fallback|timeout messages on Vertex routes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 58
+      },
+      "id": 151,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| message = /retry/i OR message = /fallback/i OR message = /timeout/i\n| timeChart(span=1h, function=count())",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Retry/fallback/timeout over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "[validate] which routes retry/timeout most.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 58
+      },
+      "id": 152,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "_count"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| message = /retry/i OR message = /fallback/i OR message = /timeout/i\n| groupBy([request_url], function=count())\n| sort(_count, order=desc)\n| head(20)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Retry/timeout by route",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 65
+      },
+      "id": 160,
+      "panels": [],
+      "title": "Breakdown",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Per-model reliability (origin_status_code).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 66
+      },
+      "id": 161,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "total"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| is_fail := if(condition=regex(field=message, \"origin_status_code=[45]\\d{2}\"), then=1, else=0)\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| groupBy([model, request_id], function=max(is_fail, as=req_failed))\n| groupBy(model, function=[count(as=total), sum(req_failed, as=failed)])\n| success := total - failed\n| success_rate := (success/total)*100\n| sort(total, order=desc)\n| select([model, total, success, failed, success_rate])",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Success/failure by model",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Which project uses which model.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 66
+      },
+      "id": 162,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "requests"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| groupBy([request_project_name, model], function=count(field=request_id, as=requests, distinct=true))\n| sort(requests, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Usage: project x model",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 75
+      },
+      "id": 170,
+      "panels": [],
+      "title": "Troubleshooting",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "origin_status_code 4xx/5xx, newest first, with status_code + request_id.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 76
+      },
+      "id": 171,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "asctime"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=message, \"origin_status_code=(?<status_code>\\d{3})\")\n| status_code = /^[45]\\d{2}$/\n| select([asctime, status_code, request_url, request_project_name, request_id, message])\n| sort(asctime, order=desc)",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Recent failed Vertex requests",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-falconlogscale-datasource",
+        "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+      },
+      "description": "Full filtered Vertex (non-Anthropic) stream.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 86
+      },
+      "id": 172,
+      "options": {
+        "cellHeight": "sm",
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "reducers": []
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "asctime"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-falconlogscale-datasource",
+            "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+          },
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| request_id = *\n| select([asctime, request_url, request_project_name, request_id, message])",
+          "refId": "A",
+          "repository": "aks-aif-mt",
+          "version": "1.7.6"
+        }
+      ],
+      "title": "Vertex log explorer",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "1m",
+  "schemaVersion": 42,
+  "tags": [
+    "GenAI",
+    "VertexAI",
+    "L3"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "aks-aif-mt-prod-5f94",
+          "value": "aks-aif-mt-prod-5f94"
+        },
+        "includeAll": false,
+        "label": "cluster",
+        "name": "cluster",
+        "options": [
+          {
+            "selected": false,
+            "text": "aks-aif-mt-nonprod-ad9d",
+            "value": "aks-aif-mt-nonprod-ad9d"
+          },
+          {
+            "selected": true,
+            "text": "aks-aif-mt-prod-5f94",
+            "value": "aks-aif-mt-prod-5f94"
+          },
+          {
+            "selected": false,
+            "text": "aks-aif-dr-prod-08-8b5b",
+            "value": "aks-aif-dr-prod-08-8b5b"
+          }
+        ],
+        "query": "aks-aif-mt-nonprod-ad9d,aks-aif-mt-prod-5f94,aks-aif-dr-prod-08-8b5b",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "tenant-genai-platform-prod",
+          "value": "tenant-genai-platform-prod"
+        },
+        "includeAll": false,
+        "label": "namespace",
+        "name": "namespace",
+        "options": [
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-dev",
+            "value": "tenant-genai-platform-dev"
+          },
+          {
+            "selected": false,
+            "text": "pg-de-cf-genai-platform",
+            "value": "pg-de-cf-genai-platform"
+          },
+          {
+            "selected": true,
+            "text": "tenant-genai-platform-prod",
+            "value": "tenant-genai-platform-prod"
+          },
+          {
+            "selected": false,
+            "text": "tenant-genai-platform-dr",
+            "value": "tenant-genai-platform-dr"
+          }
+        ],
+        "query": "tenant-genai-platform-dev,pg-de-cf-genai-platform,tenant-genai-platform-prod,tenant-genai-platform-dr",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "prod",
+          "value": "prod"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale - release",
+        "includeAll": false,
+        "label": "release",
+        "name": "release",
+        "options": [],
+        "query": {
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace | groupBy([kubernetes.pod_labels.release], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "ipa-api-server",
+          "value": "ipa-api-server"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale - container",
+        "includeAll": false,
+        "label": "container",
+        "name": "container",
+        "options": [],
+        "query": {
+          "lsql": "kubernetes.container.name := #kubernetes.container.name | drop(#kubernetes.container.name) | //aks repository restructure - line can be deleted after 2025-06-01 \n#kubernetes.cluster = $cluster AND #kubernetes.namespace = $namespace AND kubernetes.pod_labels.release = $release | groupBy([kubernetes.container.name], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale - project",
+        "includeAll": true,
+        "label": "project",
+        "name": "project",
+        "options": [],
+        "query": {
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| groupBy([request_project_name], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale - model",
+        "includeAll": true,
+        "label": "model",
+        "name": "model",
+        "options": [],
+        "query": {
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=request_url, \"models/(?<model>[^/:@]+)\")\n| groupBy([model], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-falconlogscale-datasource",
+          "uid": "cb964bb3-1b09-42e1-b5b6-2d48b3eb8daf"
+        },
+        "definition": "LogScale - region",
+        "includeAll": true,
+        "label": "region",
+        "name": "region",
+        "options": [],
+        "query": {
+          "lsql": "#kubernetes.cluster = \"$cluster\"\nAND kubernetes.container.name = \"$container\"\nAND #kubernetes.namespace = \"$namespace\"\nAND kubernetes.pod_labels.release = \"$release\"\n| parseJson(field=message)\n| request_url = *vertexai*\n| request_url != */anthropic/*\n| regex(field=request_url, \"/locations/(?<region>[^/]+)/\")\n| groupBy([region], function=[])",
+          "repository": "aks-aif-mt"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "VertexAI Requests",
+  "uid": "vertexai-l3",
+  "version": 1
+}
